@@ -1,0 +1,199 @@
+Traceback (most recent call last):
+  File "/home/snowfall/Documents/git/ML-2Team/dataCrawl(WindVer).py", line 7, in <module>
+    ee.Initialize()
+  File "/home/snowfall/.pyenv/versions/snowfall3.10/lib/python3.10/site-packages/ee/_utils.py", line 38, in wrapper
+    return func(*args, **kwargs)
+  File "/home/snowfall/.pyenv/versions/snowfall3.10/lib/python3.10/site-packages/ee/__init__.py", line 212, in Initialize
+    ApiFunction.initialize()
+  File "/home/snowfall/.pyenv/versions/snowfall3.10/lib/python3.10/site-packages/ee/apifunction.py", line 161, in initialize
+    signatures = data.getAlgorithms()
+  File "/home/snowfall/.pyenv/versions/snowfall3.10/lib/python3.10/site-packages/ee/data.py", line 1499, in getAlgorithms
+    return _cloud_api_utils.convert_algorithms(_execute_cloud_call(call))
+  File "/home/snowfall/.pyenv/versions/snowfall3.10/lib/python3.10/site-packages/ee/data.py", line 408, in _execute_cloud_call
+    return call.execute(num_retries=num_retries)
+  File "/home/snowfall/.pyenv/versions/snowfall3.10/lib/python3.10/site-packages/googleapiclient/_helpers.py", line 130, in positional_wrapper
+    return wrapped(*args, **kwargs)
+  File "/home/snowfall/.pyenv/versions/snowfall3.10/lib/python3.10/site-packages/googleapiclient/http.py", line 923, in execute
+    resp, content = _retry_request(
+  File "/home/snowfall/.pyenv/versions/snowfall3.10/lib/python3.10/site-packages/googleapiclient/http.py", line 191, in _retry_request
+    resp, content = http.request(uri, method, *args, **kwargs)
+  File "/home/snowfall/.pyenv/versions/snowfall3.10/lib/python3.10/site-packages/google_auth_httplib2.py", line 218, in request
+    response, content = self.http.request(
+  File "/home/snowfall/.pyenv/versions/snowfall3.10/lib/python3.10/site-packages/ee/_cloud_api_utils.py", line 70, in request
+    response = self._session.request(
+  File "/home/snowfall/.pyenv/versions/snowfall3.10/lib/python3.10/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+  File "/home/snowfall/.pyenv/versions/snowfall3.10/lib/python3.10/site-packages/requests/sessions.py", line 746, in send
+    r.content
+  File "/home/snowfall/.pyenv/versions/snowfall3.10/lib/python3.10/site-packages/requests/models.py", line 902, in content
+    self._content = b"".join(self.iter_content(CONTENT_CHUNK_SIZE)) or b""
+  File "/home/snowfall/.pyenv/versions/snowfall3.10/lib/python3.10/site-packages/requests/models.py", line 820, in generate
+    yield from self.raw.stream(chunk_size, decode_content=True)
+  File "/home/snowfall/.pyenv/versions/snowfall3.10/lib/python3.10/site-packages/urllib3/response.py", line 1063, in stream
+    yield from self.read_chunked(amt, decode_content=decode_content)
+  File "/home/snowfall/.pyenv/versions/snowfall3.10/lib/python3.10/site-packages/urllib3/response.py", line 1219, in read_chunked
+    self._update_chunk_length()
+  File "/home/snowfall/.pyenv/versions/snowfall3.10/lib/python3.10/site-packages/urllib3/response.py", line 1138, in _update_chunk_length
+    line = self._fp.fp.readline()  # type: ignore[union-attr]
+  File "/home/snowfall/.pyenv/versions/3.10.13/lib/python3.10/socket.py", line 705, in readinto
+    return self._sock.recv_into(b)
+  File "/home/snowfall/.pyenv/versions/3.10.13/lib/python3.10/ssl.py", line 1307, in recv_into
+    return self.read(nbytes, buffer)
+  File "/home/snowfall/.pyenv/versions/3.10.13/lib/python3.10/ssl.py", line 1163, in read
+    return self._sslobj.read(len, buffer)
+KeyboardInterrupt
+
+  You can now view your Streamlit app in your browser.
+
+  URL: http://0.0.0.0:5000
+
+  Stopping...
+
+  You can now view your Streamlit app in your browser.
+
+  URL: http://0.0.0.0:5000
+
+/home/snowfall/Documents/git/ML-2Team/pages/visualization_GradientBoost.py:128: DeprecationWarning: *scatter_mapbox* is deprecated! Use *scatter_map* instead. Learn more at: https://plotly.com/python/mapbox-to-maplibre/
+  fig = px.scatter_mapbox(date_data,
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000106 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2970, number of used features: 2
+[LightGBM] [Info] Start training from score 43.672267
+[LightGBM] [Info] Auto-choosing row-wise multi-threading, the overhead of testing was 0.000035 seconds.
+You can set `force_row_wise=true` to remove the overhead.
+And if memory is not enough, you can set `force_col_wise=true`.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2970, number of used features: 2
+[LightGBM] [Info] Start training from score 17.598094
+[LightGBM] [Info] Auto-choosing row-wise multi-threading, the overhead of testing was 0.000054 seconds.
+You can set `force_row_wise=true` to remove the overhead.
+And if memory is not enough, you can set `force_col_wise=true`.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2970, number of used features: 2
+[LightGBM] [Info] Start training from score 95.524146
+[LightGBM] [Info] Auto-choosing row-wise multi-threading, the overhead of testing was 0.000047 seconds.
+You can set `force_row_wise=true` to remove the overhead.
+And if memory is not enough, you can set `force_col_wise=true`.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2970, number of used features: 2
+[LightGBM] [Info] Start training from score 32.660305
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000083 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2970, number of used features: 2
+[LightGBM] [Info] Start training from score 53.571644
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000061 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2970, number of used features: 2
+[LightGBM] [Info] Start training from score 24.885587
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000096 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2970, number of used features: 2
+[LightGBM] [Info] Start training from score 44.216463
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000061 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2971, number of used features: 2
+[LightGBM] [Info] Start training from score 47.444208
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000081 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2971, number of used features: 2
+[LightGBM] [Info] Start training from score 49.154039
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000080 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2970, number of used features: 2
+[LightGBM] [Info] Start training from score 21.295525
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000100 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2970, number of used features: 2
+[LightGBM] [Info] Start training from score 15.419824
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000096 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2970, number of used features: 2
+[LightGBM] [Info] Start training from score 17.658913
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000093 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2971, number of used features: 2
+[LightGBM] [Info] Start training from score 17.172632
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000099 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2971, number of used features: 2
+[LightGBM] [Info] Start training from score 16.108557
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000114 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2970, number of used features: 2
+[LightGBM] [Info] Start training from score 116.127075
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000084 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2970, number of used features: 2
+[LightGBM] [Info] Start training from score 65.852005
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000105 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2970, number of used features: 2
+[LightGBM] [Info] Start training from score 94.194402
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000093 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2971, number of used features: 2
+[LightGBM] [Info] Start training from score 99.973819
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000091 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2971, number of used features: 2
+[LightGBM] [Info] Start training from score 107.119800
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000113 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2970, number of used features: 2
+[LightGBM] [Info] Start training from score 40.741507
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000133 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2970, number of used features: 2
+[LightGBM] [Info] Start training from score 30.602808
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000113 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2970, number of used features: 2
+[LightGBM] [Info] Start training from score 29.060915
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000096 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268
+[LightGBM] [Info] Number of data points in the train set: 2971, number of used features: 2
+[LightGBM] [Info] Start training from score 29.615785
+[LightGBM] [Info] Auto-choosing col-wise multi-threading, the overhead of testing was 0.000107 seconds.
+You can set `force_col_wise=true` to remove the overhead.
+[LightGBM] [Info] Total Bins 268/home/snowfall/.pyenv/versions/ML_PJ/lib/python3.12/site-packages/sklearn/cluster/_kmeans.py:1404: RuntimeWarning:
+
+Explicit initial center position passed: performing only one init in KMeans instead of n_init=10.
+
+2025-03-20 00:48:02.031 Uncaught app execution
+Traceback (most recent call last):
+  File "/home/snowfall/.pyenv/versions/ML_PJ/lib/python3.12/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 121, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+  File "/home/snowfall/.pyenv/versions/ML_PJ/lib/python3.12/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 593, in code_to_exec
+    exec(code, module.__dict__)
+  File "/home/snowfall/Documents/git/ML-2Team/pages/visualization_Kmeans wind.py", line 10, in <module>
+    scaler_pm25 = joblib.load('../models/rf/scaler_pm25.pkl')  # PM2.5용 StandardScaler
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/snowfall/.pyenv/versions/ML_PJ/lib/python3.12/site-packages/joblib/numpy_pickle.py", line 650, in load
+    with open(filename, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '../models/rf/scaler_pm25.pkl'
+/home/snowfall/.pyenv/versions/ML_PJ/lib/python3.12/site-packages/sklearn/cluster/_kmeans.py:1404: RuntimeWarning:
+
+Explicit initial center position passed: performing only one init in KMeans instead of n_init=10.
+

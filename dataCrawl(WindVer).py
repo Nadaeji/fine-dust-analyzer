@@ -13,7 +13,6 @@ locations = {
     "Delhi": [77.1025, 28.7041],
     "Bangkok": [100.5018, 13.7563],
     "Busan": [129.0756, 35.1796],
-    "Incheon": [126.7052, 37.4563],
     "Daegu": [128.5911, 35.8704],
     "Osaka": [135.5023, 34.6937],
     "Nagoya": [136.9066, 35.1802],
@@ -38,11 +37,10 @@ locations = {
     "Guwahati": [91.7362, 26.1445],
     "Ulaanbaatar": [106.9057, 47.8864],
     "Irkutsk": [104.2964, 52.2869],
-    "Vladivostok": [131.8869, 43.1155]
 }
 
-start_date = datetime(2022, 1, 1) 
-end_date = datetime(2022, 2, 1)
+start_date = datetime(2023, 4, 1) 
+end_date = datetime(2025, 3, 1)
 
 pm_dataset = ee.ImageCollection("ECMWF/CAMS/NRT")
 wind_dataset = ee.ImageCollection("ECMWF/ERA5_LAND/HOURLY")
