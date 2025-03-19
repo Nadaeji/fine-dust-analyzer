@@ -2,8 +2,11 @@ import os
 import subprocess
 
 def run_train_scripts(directory="train"):
-    # train 폴더 내 모든 .py 파일 가져오기
-    script_files = sorted([f for f in os.listdir(directory) if f.endswith(".py")])
+    # 현재 실행 중인 파일명
+    current_script = os.path.basename(__file__)
+    
+    # train 폴더 내 모든 .py 파일 가져오기 (현재 파일 제외)
+    script_files = sorted([f for f in os.listdir(directory) if f.endswith(".py") and f != current_script])
     
     if not script_files:
         print("No training scripts found in the directory.")
