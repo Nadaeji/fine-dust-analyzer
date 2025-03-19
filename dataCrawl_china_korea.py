@@ -20,8 +20,8 @@ for lat in latitudes:
 print(f"총 좌표 수: {len(locations)}")  # 확인용: 12
 
 # 날짜 설정
-start_date = datetime(2022, 1, 1)
-end_date = datetime(2022, 2, 1)
+start_date = datetime(2018, 1, 1)
+end_date = datetime(2025, 2, 1)
 
 pm_dataset = ee.ImageCollection("ECMWF/CAMS/NRT")
 wind_dataset = ee.ImageCollection("ECMWF/ERA5_LAND/HOURLY")
