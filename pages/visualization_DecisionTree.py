@@ -7,33 +7,33 @@ import folium
 from streamlit_folium import st_folium
 
 # 1. 저장된 모델 및 데이터 로드
-scaler_pm25 = joblib.load('models/rf/scaler_pm25.pkl')  # PM2.5용 StandardScaler
-scaler_pm10 = joblib.load('models/rf/scaler_pm10.pkl')  # PM10용 StandardScaler
-season_wind = joblib.load('models/rf/season_wind.pkl')
-evaluation_scores_pm25 = joblib.load('models/rf/evaluation_scores_pm25.pkl')
-evaluation_scores_pm10 = joblib.load('models/rf/evaluation_scores_pm10.pkl')
+scaler_pm25 = joblib.load('models/dt/scaler_pm25.pkl')  # PM2.5용 StandardScaler
+scaler_pm10 = joblib.load('models/dt/scaler_pm10.pkl')  # PM10용 StandardScaler
+season_wind = joblib.load('models/dt/season_wind.pkl')
+evaluation_scores_pm25 = joblib.load('models/dt/evaluation_scores_pm25.pkl')
+evaluation_scores_pm10 = joblib.load('models/dt/evaluation_scores_pm10.pkl')
 
-# RandomForest 모델 로드 (PM2.5와 PM10)
+# DecisionTree 모델 로드 (PM2.5와 PM10)
 seasons = ['봄', '여름', '가을', '겨울']
 nearby_cities = ['Seoul', 'Tokyo', 'Delhi', 'Bangkok', 'Busan', 'Daegu', 'Osaka', 
                  'Sapporo', 'Fukuoka', 'Kyoto', 'Almaty', 'Bishkek', 'Dushanbe', 
                  'Kathmandu', 'Yangon', 'Guwahati', 'Ulaanbaatar', 'Irkutsk']
-rf_models_pm25 = {}
-rf_models_pm10 = {}
+dt_models_pm25 = {}
+dt_models_pm10 = {}
 
 for season in seasons:
-    rf_models_pm25[season] = {}
-    rf_models_pm10[season] = {}
+    dt_models_pm25[season] = {}
+    dt_models_pm10[season] = {}
     for city in nearby_cities:
         try:
-            rf_models_pm25[season][city] = joblib.load(f'models/rf/rf_pm25_{season}_{city}.pkl')
-            rf_models_pm10[season][city] = joblib.load(f'models/rf/rf_pm10_{season}_{city}.pkl')
+            dt_models_pm25[season][city] = joblib.load(f'models/dt/dt_pm25_{season}_{city}.pkl')
+            dt_models_pm10[season][city] = joblib.load(f'models/dt/dt_pm10_{season}_{city}.pkl')
         except FileNotFoundError:
             continue
 
 # 도시 이름 매핑 (영어 → 한국어)
 city_names_kr = {
-    "Seoul": "서울", "Tokyo": "도쿄", "Beijing": "베이징", "Delhi": "델리", 
+    "Seoul": "서울", "Tokyo": "도쿄", "BeijingSeveral": "베이징", "Delhi": "델리", 
     "Bangkok": "방콕", "Busan": "부산", "Daegu": "대구", "Osaka": "오사카", 
     "Sapporo": "삿포로", "Fukuoka": "후쿠오카", "Kyoto": "교토", "Shanghai": "상하이", 
     "Guangzhou": "광저우", "Chongqing": "충칭", "Wuhan": "우한", "Nanjing": "난징", 
@@ -58,13 +58,13 @@ city_coords = {
 # 예측 함수
 def predict_all_cities(season, china_value, pollutant='PM2.5'):
     if pollutant == 'PM2.5':
-        rf_models = rf_models_pm25
+        dt_models = dt_models_pm25
         scaler = scaler_pm25
     else:
-        rf_models = rf_models_pm10
+        dt_models = dt_models_pm10
         scaler = scaler_pm10
     
-    if season not in rf_models:
+    if season not in dt_models:
         return None
     
     wind_x = season_wind['Wind_X'][season]
@@ -77,19 +77,19 @@ def predict_all_cities(season, china_value, pollutant='PM2.5'):
     
     predictions = {}
     for city in nearby_cities:
-        if city in rf_models[season]:
-            prediction = rf_models[season][city].predict(input_scaled)[0]
+        if city in dt_models[season]:
+            prediction = dt_models[season][city].predict(input_scaled)[0]
             predictions[city] = prediction
     return predictions
 
-# 등급 및 색상 계산 함수
+# 등급 및 색상 계산 함수 (train.py의 cluster_labels에 맞춤)
 def get_grade(value, pollutant='PM2.5'):
     if pollutant == 'PM2.5':
-        if value <= 15:
+        if value <= 10:
             return "좋음", "green"
-        elif value <= 50:
+        elif value <= 25:
             return "보통", "blue"
-        elif value <= 100:
+        elif value <= 50:
             return "나쁨", "orange"
         else:
             return "매우 나쁨", "red"
