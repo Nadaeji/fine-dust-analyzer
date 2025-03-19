@@ -1,10 +1,9 @@
-# train.py
 import pandas as pd
 import numpy as np
 from sklearn.cluster import DBSCAN  # DBSCAN 클러스터링
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 import joblib
 import os
@@ -95,6 +94,15 @@ rf_models_pm10 = {}
 evaluation_scores_pm25 = {}
 evaluation_scores_pm10 = {}
 
+# 하이퍼파라미터 탐색 범위 정의
+param_dist = {
+    'n_estimators': [50, 100, 200, 300],          # 트리 개수
+    'max_depth': [5, 10, 20, 30, None],           # 최대 깊이
+    'min_samples_split': [2, 5, 10, 20],          # 분할 최소 샘플 수
+    'min_samples_leaf': [1, 2, 5, 10],            # 리프 최소 샘플 수
+    'max_features': ['auto', 'sqrt', 'log2']      # 피처 고려 비율
+}
+
 # PM2.5 모델 학습
 for season in seasons:
     season_data = merged_data_pm25[merged_data_pm25['Season'] == season].dropna()
@@ -126,22 +134,38 @@ for season in seasons:
         X_city = X_with_cluster[:len(y)]
         X_train, X_test, y_train, y_test = train_test_split(X_city, y, test_size=0.2, random_state=42)
         
-        # RandomForestRegressor 학습
-        rf = RandomForestRegressor(n_estimators=100, random_state=42)
-        rf.fit(X_train, y_train)
+        # RandomizedSearchCV로 하이퍼파라미터 튜닝
+        rf = RandomForestRegressor(random_state=42)
+        rf_search = RandomizedSearchCV(
+            rf, 
+            param_distributions=param_dist, 
+            n_iter=20,  # 20개의 조합 시도
+            cv=5,       # 5-fold 교차 검증
+            scoring='neg_mean_squared_error', 
+            random_state=42, 
+            n_jobs=-1   # 모든 CPU 코어 사용
+        )
+        rf_search.fit(X_train, y_train)
         
-        # 예측
-        y_pred = rf.predict(X_test)
+        # 최적 모델로 예측
+        best_rf = rf_search.best_estimator_
+        y_pred = best_rf.predict(X_test)
         
         # 평가 점수 계산
         mse = mean_squared_error(y_test, y_pred)
         rmse = np.sqrt(mse)
         mae = mean_absolute_error(y_test, y_pred)
         r2 = r2_score(y_test, y_pred)
-        evaluation_scores_pm25[season][city] = {'MSE': mse, 'RMSE': rmse, 'MAE': mae, 'R²': r2}
+        evaluation_scores_pm25[season][city] = {
+            'MSE': mse, 
+            'RMSE': rmse, 
+            'MAE': mae, 
+            'R²': r2,
+            'Best_Params': rf_search.best_params_  # 최적 파라미터 저장
+        }
         
         # 모델 저장
-        rf_models_pm25[season][city] = rf
+        rf_models_pm25[season][city] = best_rf
 
 # PM10 모델 학습
 for season in seasons:
@@ -174,22 +198,38 @@ for season in seasons:
         X_city = X_with_cluster[:len(y)]
         X_train, X_test, y_train, y_test = train_test_split(X_city, y, test_size=0.2, random_state=42)
         
-        # RandomForestRegressor 학습
-        rf = RandomForestRegressor(n_estimators=100, random_state=42)
-        rf.fit(X_train, y_train)
+        # RandomizedSearchCV로 하이퍼파라미터 튜닝
+        rf = RandomForestRegressor(random_state=42)
+        rf_search = RandomizedSearchCV(
+            rf, 
+            param_distributions=param_dist, 
+            n_iter=20,  # 20개의 조합 시도
+            cv=5,       # 5-fold 교차 검증
+            scoring='neg_mean_squared_error', 
+            random_state=42, 
+            n_jobs=-1   # 모든 CPU 코어 사용
+        )
+        rf_search.fit(X_train, y_train)
         
-        # 예측
-        y_pred = rf.predict(X_test)
+        # 최적 모델로 예측
+        best_rf = rf_search.best_estimator_
+        y_pred = best_rf.predict(X_test)
         
         # 평가 점수 계산
         mse = mean_squared_error(y_test, y_pred)
         rmse = np.sqrt(mse)
         mae = mean_absolute_error(y_test, y_pred)
         r2 = r2_score(y_test, y_pred)
-        evaluation_scores_pm10[season][city] = {'MSE': mse, 'RMSE': rmse, 'MAE': mae, 'R²': r2}
+        evaluation_scores_pm10[season][city] = {
+            'MSE': mse, 
+            'RMSE': rmse, 
+            'MAE': mae, 
+            'R²': r2,
+            'Best_Params': rf_search.best_params_  # 최적 파라미터 저장
+        }
         
         # 모델 저장
-        rf_models_pm10[season][city] = rf
+        rf_models_pm10[season][city] = best_rf
 
 # 4. 모델 및 데이터 저장
 # StandardScaler 저장 (PM2.5와 PM10 각각)

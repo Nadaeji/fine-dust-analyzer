@@ -1,10 +1,13 @@
+# train.py
 import pandas as pd
 import numpy as np
 from sklearn.cluster import KMeans
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, VotingRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+from sklearn.linear_model import LinearRegression  # Stacking의 메타 모델로 사용
+from sklearn.ensemble import StackingRegressor
 import joblib
 import os
 
@@ -83,24 +86,30 @@ cluster_labels_pm10 = {
     3: "매우 나쁨 (PM10 > 150 µg/m³)"
 }
 
-# 3. KMeans 군집화 및 RandomForestRegressor 모델 학습
+# 3. KMeans 군집화 및 앙상블 모델 학습
 seasons = ['봄', '여름', '가을', '겨울']
 scaler_pm25 = StandardScaler()  # PM2.5용 StandardScaler
 scaler_pm10 = StandardScaler()  # PM10용 StandardScaler
 kmeans_pm25 = KMeans(n_clusters=4, random_state=42)
 kmeans_pm10 = KMeans(n_clusters=4, random_state=42)
-rf_models_pm25 = {}
-rf_models_pm10 = {}
+ensemble_models_pm25 = {}
+ensemble_models_pm10 = {}
 evaluation_scores_pm25 = {}
 evaluation_scores_pm10 = {}
 
 # 하이퍼파라미터 탐색 범위 정의
-param_dist = {
-    'n_estimators': [50, 100, 200, 300],          # 트리 개수
-    'max_depth': [5, 10, 20, 30, None],           # 최대 깊이
-    'min_samples_split': [2, 5, 10, 20],          # 분할 최소 샘플 수
-    'min_samples_leaf': [1, 2, 5, 10],            # 리프 최소 샘플 수
-    'max_features': ['auto', 'sqrt', 'log2']      # 피처 고려 비율
+rf_param_dist = {
+    'n_estimators': [50, 100, 200],
+    'max_depth': [10, 20, None],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2, 5],
+    'max_features': ['auto', 'sqrt']
+}
+
+gb_param_dist = {
+    'n_estimators': [50, 100, 200],
+    'learning_rate': [0.01, 0.1, 0.2],
+    'max_depth': [3, 5, 7]
 }
 
 # PM2.5 모델 학습
@@ -117,7 +126,7 @@ for season in seasons:
     kmeans_pm25.fit(pm25_values)
     season_data['PM2.5_Cluster'] = kmeans_pm25.labels_
     
-    rf_models_pm25[season] = {}
+    ensemble_models_pm25[season] = {}
     evaluation_scores_pm25[season] = {}
     for city in nearby_cities:
         if city not in season_data.columns:
@@ -130,38 +139,53 @@ for season in seasons:
         X_city = X_scaled[:len(y)]
         X_train, X_test, y_train, y_test = train_test_split(X_city, y, test_size=0.2, random_state=42)
         
-        # RandomizedSearchCV로 하이퍼파라미터 튜닝
+        # 개별 모델 정의
         rf = RandomForestRegressor(random_state=42)
-        rf_search = RandomizedSearchCV(
-            rf, 
-            param_distributions=param_dist, 
-            n_iter=20,  # 20개의 조합 시도
-            cv=5,       # 5-fold 교차 검증
-            scoring='neg_mean_squared_error', 
-            random_state=42, 
-            n_jobs=-1   # 모든 CPU 코어 사용
-        )
+        gb = GradientBoostingRegressor(random_state=42)
+        
+        # 하이퍼파라미터 튜닝 (RandomizedSearchCV)
+        rf_search = RandomizedSearchCV(rf, rf_param_dist, n_iter=10, cv=3, scoring='neg_mean_squared_error', random_state=42, n_jobs=-1)
+        gb_search = RandomizedSearchCV(gb, gb_param_dist, n_iter=10, cv=3, scoring='neg_mean_squared_error', random_state=42, n_jobs=-1)
+        
         rf_search.fit(X_train, y_train)
+        gb_search.fit(X_train, y_train)
         
-        # 최적 모델로 예측
         best_rf = rf_search.best_estimator_
-        y_pred = best_rf.predict(X_test)
+        best_gb = gb_search.best_estimator_
         
-        # 평가 점수 계산
-        mse = mean_squared_error(y_test, y_pred)
-        rmse = np.sqrt(mse)
-        mae = mean_absolute_error(y_test, y_pred)
-        r2 = r2_score(y_test, y_pred)
+        # Voting Regressor (투표)
+        voting_reg = VotingRegressor(estimators=[('rf', best_rf), ('gb', best_gb)])
+        voting_reg.fit(X_train, y_train)
+        
+        # Stacking Regressor (스태킹)
+        stacking_reg = StackingRegressor(
+            estimators=[('rf', best_rf), ('gb', best_gb)],
+            final_estimator=LinearRegression()
+        )
+        stacking_reg.fit(X_train, y_train)
+        
+        # Voting 예측 및 평가
+        y_pred_voting = voting_reg.predict(X_test)
+        mse_voting = mean_squared_error(y_test, y_pred_voting)
+        rmse_voting = np.sqrt(mse_voting)
+        mae_voting = mean_absolute_error(y_test, y_pred_voting)
+        r2_voting = r2_score(y_test, y_pred_voting)
+        
+        # Stacking 예측 및 평가
+        y_pred_stacking = stacking_reg.predict(X_test)
+        mse_stacking = mean_squared_error(y_test, y_pred_stacking)
+        rmse_stacking = np.sqrt(mse_stacking)
+        mae_stacking = mean_absolute_error(y_test, y_pred_stacking)
+        r2_stacking = r2_score(y_test, y_pred_stacking)
+        
+        # 평가 점수 저장 (Voting과 Stacking 모두)
         evaluation_scores_pm25[season][city] = {
-            'MSE': mse, 
-            'RMSE': rmse, 
-            'MAE': mae, 
-            'R²': r2,
-            'Best_Params': rf_search.best_params_  # 최적 파라미터 저장
+            'Voting': {'MSE': mse_voting, 'RMSE': rmse_voting, 'MAE': mae_voting, 'R²': r2_voting, 'Best_RF_Params': rf_search.best_params_, 'Best_GB_Params': gb_search.best_params_},
+            'Stacking': {'MSE': mse_stacking, 'RMSE': rmse_stacking, 'MAE': mae_stacking, 'R²': r2_stacking, 'Best_RF_Params': rf_search.best_params_, 'Best_GB_Params': gb_search.best_params_}
         }
         
-        # 모델 저장
-        rf_models_pm25[season][city] = best_rf
+        # 모델 저장 (Voting과 Stacking 모두)
+        ensemble_models_pm25[season][city] = {'Voting': voting_reg, 'Stacking': stacking_reg}
 
 # PM10 모델 학습
 for season in seasons:
@@ -177,7 +201,7 @@ for season in seasons:
     kmeans_pm10.fit(pm10_values)
     season_data['PM10_Cluster'] = kmeans_pm10.labels_
     
-    rf_models_pm10[season] = {}
+    ensemble_models_pm10[season] = {}
     evaluation_scores_pm10[season] = {}
     for city in nearby_cities:
         if city not in season_data.columns:
@@ -190,69 +214,77 @@ for season in seasons:
         X_city = X_scaled[:len(y)]
         X_train, X_test, y_train, y_test = train_test_split(X_city, y, test_size=0.2, random_state=42)
         
-        # RandomizedSearchCV로 하이퍼파라미터 튜닝
+        # 개별 모델 정의
         rf = RandomForestRegressor(random_state=42)
-        rf_search = RandomizedSearchCV(
-            rf, 
-            param_distributions=param_dist, 
-            n_iter=20,  # 20개의 조합 시도
-            cv=5,       # 5-fold 교차 검증
-            scoring='neg_mean_squared_error', 
-            random_state=42, 
-            n_jobs=-1   # 모든 CPU 코어 사용
-        )
+        gb = GradientBoostingRegressor(random_state=42)
+        
+        # 하이퍼파라미터 튜닝 (RandomizedSearchCV)
+        rf_search = RandomizedSearchCV(rf, rf_param_dist, n_iter=10, cv=3, scoring='neg_mean_squared_error', random_state=42, n_jobs=-1)
+        gb_search = RandomizedSearchCV(gb, gb_param_dist, n_iter=10, cv=3, scoring='neg_mean_squared_error', random_state=42, n_jobs=-1)
+        
         rf_search.fit(X_train, y_train)
+        gb_search.fit(X_train, y_train)
         
-        # 최적 모델로 예측
         best_rf = rf_search.best_estimator_
-        y_pred = best_rf.predict(X_test)
+        best_gb = gb_search.best_estimator_
         
-        # 평가 점수 계산
-        mse = mean_squared_error(y_test, y_pred)
-        rmse = np.sqrt(mse)
-        mae = mean_absolute_error(y_test, y_pred)
-        r2 = r2_score(y_test, y_pred)
+        # Voting Regressor (투표)
+        voting_reg = VotingRegressor(estimators=[('rf', best_rf), ('gb', best_gb)])
+        voting_reg.fit(X_train, y_train)
+        
+        # Stacking Regressor (스태킹)
+        stacking_reg = StackingRegressor(
+            estimators=[('rf', best_rf), ('gb', best_gb)],
+            final_estimator=LinearRegression()
+        )
+        stacking_reg.fit(X_train, y_train)
+        
+        # Voting 예측 및 평가
+        y_pred_voting = voting_reg.predict(X_test)
+        mse_voting = mean_squared_error(y_test, y_pred_voting)
+        rmse_voting = np.sqrt(mse_voting)
+        mae_voting = mean_absolute_error(y_test, y_pred_voting)
+        r2_voting = r2_score(y_test, y_pred_voting)
+        
+        # Stacking 예측 및 평가
+        y_pred_stacking = stacking_reg.predict(X_test)
+        mse_stacking = mean_squared_error(y_test, y_pred_stacking)
+        rmse_stacking = np.sqrt(mse_stacking)
+        mae_stacking = mean_absolute_error(y_test, y_pred_stacking)
+        r2_stacking = r2_score(y_test, y_pred_stacking)
+        
+        # 평가 점수 저장 (Voting과 Stacking 모두)
         evaluation_scores_pm10[season][city] = {
-            'MSE': mse, 
-            'RMSE': rmse, 
-            'MAE': mae, 
-            'R²': r2,
-            'Best_Params': rf_search.best_params_  # 최적 파라미터 저장
+            'Voting': {'MSE': mse_voting, 'RMSE': rmse_voting, 'MAE': mae_voting, 'R²': r2_voting, 'Best_RF_Params': rf_search.best_params_, 'Best_GB_Params': gb_search.best_params_},
+            'Stacking': {'MSE': mse_stacking, 'RMSE': rmse_stacking, 'MAE': mae_stacking, 'R²': r2_stacking, 'Best_RF_Params': rf_search.best_params_, 'Best_GB_Params': gb_search.best_params_}
         }
         
-        # 모델 저장
-        rf_models_pm10[season][city] = best_rf
+        # 모델 저장 (Voting과 Stacking 모두)
+        ensemble_models_pm10[season][city] = {'Voting': voting_reg, 'Stacking': stacking_reg}
 
 # 4. 모델 및 데이터 저장
-# StandardScaler 저장 (PM2.5와 PM10 각각)
 joblib.dump(scaler_pm25, '../models/rf/scaler_pm25.pkl')
 joblib.dump(scaler_pm10, '../models/rf/scaler_pm10.pkl')
-
-# KMeans 모델 저장
 joblib.dump(kmeans_pm25, '../models/rf/kmeans_pm25.pkl')
 joblib.dump(kmeans_pm10, '../models/rf/kmeans_pm10.pkl')
-
-# season_wind 저장
 joblib.dump(season_wind, '../models/rf/season_wind.pkl')
 
-# RandomForest 모델 저장 (PM2.5)
-for season in rf_models_pm25:
-    for city in rf_models_pm25[season]:
-        joblib.dump(rf_models_pm25[season][city], f'../models/rf/rf_pm25_{season}_{city}.pkl')
+# RandomForest + GradientBoosting 앙상블 모델 저장 (PM2.5)
+for season in ensemble_models_pm25:
+    for city in ensemble_models_pm25[season]:
+        joblib.dump(ensemble_models_pm25[season][city]['Voting'], f'../models/rf/voting_pm25_{season}_{city}.pkl')
+        joblib.dump(ensemble_models_pm25[season][city]['Stacking'], f'../models/rf/stacking_pm25_{season}_{city}.pkl')
 
-# RandomForest 모델 저장 (PM10)
-for season in rf_models_pm10:
-    for city in rf_models_pm10[season]:
-        joblib.dump(rf_models_pm10[season][city], f'../models/rf/rf_pm10_{season}_{city}.pkl')
+# RandomForest + GradientBoosting 앙상블 모델 저장 (PM10)
+for season in ensemble_models_pm10:
+    for city in ensemble_models_pm10[season]:
+        joblib.dump(ensemble_models_pm10[season][city]['Voting'], f'../models/rf/voting_pm10_{season}_{city}.pkl')
+        joblib.dump(ensemble_models_pm10[season][city]['Stacking'], f'../models/rf/stacking_pm10_{season}_{city}.pkl')
 
-# 평가 점수 저장 (PM2.5)
+# 평가 점수 저장
 joblib.dump(evaluation_scores_pm25, '../models/rf/evaluation_scores_pm25.pkl')
-
-# 평가 점수 저장 (PM10)
 joblib.dump(evaluation_scores_pm10, '../models/rf/evaluation_scores_pm10.pkl')
-
-# 군집 라벨 저장
 joblib.dump(cluster_labels_pm25, '../models/rf/cluster_labels_pm25.pkl')
 joblib.dump(cluster_labels_pm10, '../models/rf/cluster_labels_pm10.pkl')
 
-print("모델 학습 및 저장 완료!")
+print("앙상블 모델 학습 및 저장 완료!")

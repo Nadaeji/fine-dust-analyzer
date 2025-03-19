@@ -1,4 +1,3 @@
-# train.py
 import pandas as pd
 import numpy as np
 from sklearn.cluster import KMeans
@@ -97,9 +96,11 @@ evaluation_scores_pm10 = {}
 
 # 하이퍼파라미터 그리드 정의
 param_grid = {
-    'max_depth': [5, 10, 15, 20, None],
-    'min_samples_split': [2, 5, 10, 20],
-    'min_samples_leaf': [1, 2, 5, 10]
+    'max_depth': [3, 5, 7, 10, 15, 20, 25, None],
+    'min_samples_split': [2, 5, 10, 15, 20, 25],
+    'min_samples_leaf': [1, 2, 5, 10, 15],
+    'max_features': ['auto', 'sqrt', 'log2', None],
+    'criterion': ['gini', 'entropy']
 }
 
 # PM2.5 모델 학습
