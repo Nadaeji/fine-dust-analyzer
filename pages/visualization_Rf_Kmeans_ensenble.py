@@ -7,13 +7,13 @@ import folium
 from streamlit_folium import st_folium
 
 # 1. 저장된 모델 및 데이터 로드
-scaler_pm25 = joblib.load('models/rf/scaler_pm25.pkl')  # PM2.5용 StandardScaler
-scaler_pm10 = joblib.load('models/rf/scaler_pm10.pkl')  # PM10용 StandardScaler
-kmeans_pm25 = joblib.load('models/rf/kmeans_pm25.pkl')  # PM2.5용 KMeans 모델
-kmeans_pm10 = joblib.load('models/rf/kmeans_pm10.pkl')  # PM10용 KMeans 모델
-season_wind = joblib.load('models/rf/season_wind.pkl')
-evaluation_scores_pm25 = joblib.load('models/rf/evaluation_scores_pm25.pkl')
-evaluation_scores_pm10 = joblib.load('models/rf/evaluation_scores_pm10.pkl')
+scaler_pm25 = joblib.load('models/rf_Kmean_ensembel/scaler_pm25.pkl')  # PM2.5용 StandardScaler
+scaler_pm10 = joblib.load('models/rf_Kmean_ensembel/scaler_pm10.pkl')  # PM10용 StandardScaler
+kmeans_pm25 = joblib.load('models/rf_Kmean_ensembel/kmeans_pm25.pkl')  # PM2.5용 KMeans 모델
+kmeans_pm10 = joblib.load('models/rf_Kmean_ensembel/kmeans_pm10.pkl')  # PM10용 KMeans 모델
+season_wind = joblib.load('models/rf_Kmean_ensembel/season_wind.pkl')
+evaluation_scores_pm25 = joblib.load('models/rf_Kmean_ensembel/evaluation_scores_pm25.pkl')
+evaluation_scores_pm10 = joblib.load('models/rf_Kmean_ensembel/evaluation_scores_pm10.pkl')
 
 # 앙상블 모델 로드 (PM2.5와 PM10)
 seasons = ['봄', '여름', '가을', '겨울']
@@ -29,12 +29,12 @@ for season in seasons:
     for city in nearby_cities:
         try:
             ensemble_models_pm25[season][city] = {
-                'Voting': joblib.load(f'models/rf/voting_pm25_{season}_{city}.pkl'),
-                'Stacking': joblib.load(f'models/rf/stacking_pm25_{season}_{city}.pkl')
+                'Voting': joblib.load(f'models/rf_Kmean_ensembel/voting_pm25_{season}_{city}.pkl'),
+                'Stacking': joblib.load(f'models/rf_Kmean_ensembel/stacking_pm25_{season}_{city}.pkl')
             }
             ensemble_models_pm10[season][city] = {
-                'Voting': joblib.load(f'models/rf/voting_pm10_{season}_{city}.pkl'),
-                'Stacking': joblib.load(f'models/rf/stacking_pm10_{season}_{city}.pkl')
+                'Voting': joblib.load(f'models/rf_Kmean_ensembel/voting_pm10_{season}_{city}.pkl'),
+                'Stacking': joblib.load(f'models/rf_Kmean_ensembel/stacking_pm10_{season}_{city}.pkl')
             }
         except FileNotFoundError:
             continue
@@ -203,7 +203,7 @@ with tab2:
 
     if predictions:
         # 예측 결과 섹션 (expander로 묶음)
-        with st.expander(f"{season}의 주변국 PM10 예측 ({ extremely_method})"):
+        with st.expander(f"{season}의 주변국 PM10 예측 ({ensemble_method})"):
             pred_table_data = {
                 "도시": [city_names_kr[city] for city in predictions.keys()],
                 "PM10 (µg/m³)": [f"{pm10:.2f}" for pm10 in predictions.values()],

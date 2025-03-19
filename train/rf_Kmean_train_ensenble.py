@@ -12,8 +12,8 @@ import joblib
 import os
 
 # 디렉토리 생성
-if not os.path.exists('models'):
-    os.makedirs('models')
+if not os.path.exists('../models/rf_Kmean_ensembel'):
+    os.makedirs('../models/rf_Kmean_ensembel')
 
 # 1. 데이터 로드
 data = pd.read_csv("../data/pm25_pm10_merged_wind.csv")
@@ -263,28 +263,28 @@ for season in seasons:
         ensemble_models_pm10[season][city] = {'Voting': voting_reg, 'Stacking': stacking_reg}
 
 # 4. 모델 및 데이터 저장
-joblib.dump(scaler_pm25, '../models/rf/scaler_pm25.pkl')
-joblib.dump(scaler_pm10, '../models/rf/scaler_pm10.pkl')
-joblib.dump(kmeans_pm25, '../models/rf/kmeans_pm25.pkl')
-joblib.dump(kmeans_pm10, '../models/rf/kmeans_pm10.pkl')
-joblib.dump(season_wind, '../models/rf/season_wind.pkl')
+joblib.dump(scaler_pm25, '../models/rf_Kmean_ensembel/scaler_pm25.pkl')
+joblib.dump(scaler_pm10, '../models/rf_Kmean_ensembel/scaler_pm10.pkl')
+joblib.dump(kmeans_pm25, '../models/rf_Kmean_ensembel/kmeans_pm25.pkl')
+joblib.dump(kmeans_pm10, '../models/rf_Kmean_ensembel/kmeans_pm10.pkl')
+joblib.dump(season_wind, '../models/rf_Kmean_ensembel/season_wind.pkl')
 
 # RandomForest + GradientBoosting 앙상블 모델 저장 (PM2.5)
 for season in ensemble_models_pm25:
     for city in ensemble_models_pm25[season]:
-        joblib.dump(ensemble_models_pm25[season][city]['Voting'], f'../models/rf/voting_pm25_{season}_{city}.pkl')
-        joblib.dump(ensemble_models_pm25[season][city]['Stacking'], f'../models/rf/stacking_pm25_{season}_{city}.pkl')
+        joblib.dump(ensemble_models_pm25[season][city]['Voting'], f'../models/rf_Kmean_ensembel/voting_pm25_{season}_{city}.pkl')
+        joblib.dump(ensemble_models_pm25[season][city]['Stacking'], f'../models/rf_Kmean_ensembel/stacking_pm25_{season}_{city}.pkl')
 
 # RandomForest + GradientBoosting 앙상블 모델 저장 (PM10)
 for season in ensemble_models_pm10:
     for city in ensemble_models_pm10[season]:
-        joblib.dump(ensemble_models_pm10[season][city]['Voting'], f'../models/rf/voting_pm10_{season}_{city}.pkl')
-        joblib.dump(ensemble_models_pm10[season][city]['Stacking'], f'../models/rf/stacking_pm10_{season}_{city}.pkl')
+        joblib.dump(ensemble_models_pm10[season][city]['Voting'], f'../models/rf_Kmean_ensembel/voting_pm10_{season}_{city}.pkl')
+        joblib.dump(ensemble_models_pm10[season][city]['Stacking'], f'../models/rf_Kmean_ensembel/stacking_pm10_{season}_{city}.pkl')
 
 # 평가 점수 저장
-joblib.dump(evaluation_scores_pm25, '../models/rf/evaluation_scores_pm25.pkl')
-joblib.dump(evaluation_scores_pm10, '../models/rf/evaluation_scores_pm10.pkl')
-joblib.dump(cluster_labels_pm25, '../models/rf/cluster_labels_pm25.pkl')
-joblib.dump(cluster_labels_pm10, '../models/rf/cluster_labels_pm10.pkl')
+joblib.dump(evaluation_scores_pm25, '../models/rf_Kmean_ensembel/evaluation_scores_pm25.pkl')
+joblib.dump(evaluation_scores_pm10, '../models/rf_Kmean_ensembel/evaluation_scores_pm10.pkl')
+joblib.dump(cluster_labels_pm25, '../models/rf_Kmean_ensembel/cluster_labels_pm25.pkl')
+joblib.dump(cluster_labels_pm10, '../models/rf_Kmean_ensembel/cluster_labels_pm10.pkl')
 
 print("앙상블 모델 학습 및 저장 완료!")

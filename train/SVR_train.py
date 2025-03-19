@@ -9,8 +9,8 @@ import joblib
 import os
 
 # 디렉토리 생성
-if not os.path.exists('models'):
-    os.makedirs('models')
+if not os.path.exists('../models/svr'):
+    os.makedirs('../models/svr')
 
 # 1. 데이터 로드
 data = pd.read_csv("../data/pm25_pm10_merged_wind.csv")

@@ -7,15 +7,15 @@ import folium
 from streamlit_folium import st_folium
 
 # 1. 저장된 모델 및 데이터 로드
-scaler_pm25 = joblib.load('../models/rf/scaler_pm25.pkl')  # PM2.5용 StandardScaler
-scaler_pm10 = joblib.load('../models/rf/scaler_pm10.pkl')  # PM10용 StandardScaler
-dbscan_pm25 = joblib.load('../models/rf/dbscan_pm25.pkl')  # DBSCAN for PM2.5
-dbscan_pm10 = joblib.load('../models/rf/dbscan_pm10.pkl')  # DBSCAN for PM10
-season_wind = joblib.load('../models/rf/season_wind.pkl')
-evaluation_scores_pm25 = joblib.load('../models/rf/evaluation_scores_pm25.pkl')
-evaluation_scores_pm10 = joblib.load('../models/rf/evaluation_scores_pm10.pkl')
-cluster_labels_pm25 = joblib.load('../models/rf/cluster_labels_pm25.pkl')
-cluster_labels_pm10 = joblib.load('../models/rf/cluster_labels_pm10.pkl')
+scaler_pm25 = joblib.load('../models/rf_db/scaler_pm25.pkl')  # PM2.5용 StandardScaler
+scaler_pm10 = joblib.load('../models/rf_db/scaler_pm10.pkl')  # PM10용 StandardScaler
+dbscan_pm25 = joblib.load('../models/rf_db/dbscan_pm25.pkl')  # DBSCAN for PM2.5
+dbscan_pm10 = joblib.load('../models/rf_db/dbscan_pm10.pkl')  # DBSCAN for PM10
+season_wind = joblib.load('../models/rf_db/season_wind.pkl')
+evaluation_scores_pm25 = joblib.load('../models/rf_db/evaluation_scores_pm25.pkl')
+evaluation_scores_pm10 = joblib.load('../models/rf_db/evaluation_scores_pm10.pkl')
+cluster_labels_pm25 = joblib.load('../models/rf_db/cluster_labels_pm25.pkl')
+cluster_labels_pm10 = joblib.load('../models/rf_db/cluster_labels_pm10.pkl')
 
 # Random Forest 모델 로드 (PM2.5와 PM10)
 seasons = ['봄', '여름', '가을', '겨울']
@@ -30,8 +30,8 @@ for season in seasons:
     rf_models_pm10[season] = {}
     for city in nearby_cities:
         try:
-            rf_models_pm25[season][city] = joblib.load(f'../models/rf/rf_pm25_{season}_{city}.pkl')
-            rf_models_pm10[season][city] = joblib.load(f'../models/rf/rf_pm10_{season}_{city}.pkl')
+            rf_models_pm25[season][city] = joblib.load(f'../models/rf_db/rf_pm25_{season}_{city}.pkl')
+            rf_models_pm10[season][city] = joblib.load(f'../models/rf_db/rf_pm10_{season}_{city}.pkl')
         except FileNotFoundError:
             continue
 
