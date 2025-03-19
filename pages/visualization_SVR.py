@@ -1,8 +1,8 @@
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.svm import SVR
+from sklearn.multioutput import MultiOutputRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from sklearn.cluster import KMeans
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import numpy as np
 import plotly.express as px
@@ -13,10 +13,9 @@ import math
 @st.cache_data
 def load_data():
     try:
-        data = pd.read_csv("./data/pm25_pm10_merged_wind.csv")  # 파일 경로 확인
+        data = pd.read_csv("./data/pm25_pm10_merged_wind.csv")
         data['Date'] = pd.to_datetime(data['Date'])
         data = data[data['Date'].dt.year >= 2019]
-        # PM2.5와 PM10 값이 0인 행 제거
         data = data[(data['PM2.5 (µg/m³)'] > 0) & (data['PM10 (µg/m³)'] > 0)]
         data['Month'] = data['Date'].dt.month
         data['Season'] = data['Month'].apply(
@@ -25,18 +24,15 @@ def load_data():
                       '가을' if x in [9, 10, 11] else
                       '겨울'
         )
-        
-        # 여름철 풍향을 남동풍(135도)으로 설정
         summer_mask = data['Season'] == '여름'
         data.loc[summer_mask, 'Wind Direction (degrees)'] = 135
-        
         print("데이터 열 이름:", data.columns.tolist())
         return data
     except FileNotFoundError:
         st.error("데이터 파일을 찾을 수 없습니다. 올바른 경로를 확인하세요.")
         return None
 
-# 군집 등급 지정 (PM2.5와 PM10 공통)
+# 군집 등급 지정
 def assign_cluster(value, is_pm25=True):
     if is_pm25:
         if value <= 10:
@@ -47,7 +43,7 @@ def assign_cluster(value, is_pm25=True):
             return "나쁨", "orange"
         else:
             return "매우 나쁨", "red"
-    else:  # PM10 기준
+    else:
         if value <= 30:
             return "좋음", "green"
         elif value <= 80:
@@ -57,38 +53,19 @@ def assign_cluster(value, is_pm25=True):
         else:
             return "매우 나쁨", "red"
 
-# 군집 설명 텍스트 생성
-def get_cluster_description(cluster, is_pm25=True):
-    if is_pm25:
-        descriptions = {
-            0: "0번 군집: 미세먼지 좋음 (PM2.5 ≤ 10 µg/m³)",
-            1: "1번 군집: 미세먼지 보통 (10 < PM2.5 ≤ 25 µg/m³)",
-            2: "2번 군집: 미세먼지 나쁨 (25 < PM2.5 ≤ 50 µg/m³)",
-            3: "3번 군집: 미세먼지 매우 나쁨 (PM2.5 > 50 µg/m³)"
-        }
-    else:
-        descriptions = {
-            0: "0번 군집: 미세먼지 좋음 (PM10 ≤ 30 µg/m³)",
-            1: "1번 군집: 미세먼지 보통 (30 < PM10 ≤ 80 µg/m³)",
-            2: "2번 군집: 미세먼지 나쁨 (80 < PM10 ≤ 150 µg/m³)",
-            3: "3번 군집: 미세먼지 매우 나쁨 (PM10 > 150 µg/m³)"
-        }
-    return descriptions.get(cluster, f"{cluster}번 군집: 정의되지 않음")
-
-# 미세먼지 이동 경로 및 농도 변화 계산 함수
+# 미세먼지 이동 경로 및 농도 변화 계산
 def calculate_movement_and_concentration(lat, lon, value, wind_speed, wind_direction, days=1, decay_rate=0.05):
     wind_rad = math.radians(90 - wind_direction)
-    distance = wind_speed * days * 24 * 3600 / 1000  # 총 이동 거리 (km)
+    distance = wind_speed * days * 24 * 3600 / 1000
     delta_lat = (distance * math.cos(wind_rad)) / 111
     delta_lon = (distance * math.sin(wind_rad)) / (111 * math.cos(math.radians(lat)))
     new_lat = lat + delta_lat
     new_lon = lon + delta_lon
-    
     total_decay = (1 - decay_rate) ** days
     new_value = value * total_decay
     return new_lat, new_lon, new_value
 
-# 회귀 평가 함수: MSE, RMSE, MAE, R² 계산
+# 회귀 평가 함수
 def evaluate_regression(y_true, y_pred):
     mse = mean_squared_error(y_true, y_pred)
     rmse = math.sqrt(mse)
@@ -126,8 +103,8 @@ city_coords = {
     "Irkutsk": [104.2964, 52.2869],
 }
 
-# KMeans + RandomForest 모델 학습 및 성능 평가 (회귀 평가 지표 사용)
-def train_model(data, season, target='PM2.5 (µg/m³)'):
+# 계절별 SVR 모델 학습 (MultiOutputRegressor 사용)
+def train_model_svr(data, season, target='PM2.5 (µg/m³)'):
     seasonal_data = data[data['Season'] == season]
     
     expected_columns = [target, 'Wind Speed (m/s)', 'Wind Direction (degrees)']
@@ -135,7 +112,6 @@ def train_model(data, season, target='PM2.5 (µg/m³)'):
     if missing_columns:
         raise KeyError(f"다음 열이 데이터에 없습니다: {missing_columns}")
 
-    # 피벗 테이블 생성 후 결측치 제거
     pivot_data = seasonal_data.pivot_table(
         index='Date', 
         columns='City', 
@@ -150,106 +126,66 @@ def train_model(data, season, target='PM2.5 (µg/m³)'):
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
 
-    mean_wind_speed = seasonal_data[seasonal_data['City'] == 'Beijing']['Wind Speed (m/s)'].mean()
+    # MultiOutputRegressor로 SVR 학습
+    svr = SVR(kernel='rbf', C=100, epsilon=0.1, gamma='scale')
+    svr_model = MultiOutputRegressor(svr)
+    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+    svr_model.fit(X_train, y_train)
+
+    # 회귀 평가 지표 계산
+    y_pred = svr_model.predict(X_test)
+    mse, rmse, mae, r2 = evaluate_regression(y_test, y_pred)
+    metrics = {'MSE': mse, 'RMSE': rmse, 'MAE': mae, 'R2': r2}
+
     mean_wind_direction = seasonal_data[seasonal_data['City'] == 'Beijing']['Wind Direction (degrees)'].mean()
-    initial_centroids = np.array([
-        [5 if target == 'PM2.5 (µg/m³)' else 15, mean_wind_speed, mean_wind_direction],
-        [17.5 if target == 'PM2.5 (µg/m³)' else 50, mean_wind_speed, mean_wind_direction],
-        [37.5 if target == 'PM2.5 (µg/m³)' else 100, mean_wind_speed, mean_wind_direction],
-        [60 if target == 'PM2.5 (µg/m³)' else 200, mean_wind_speed, mean_wind_direction]
-    ])
 
-    kmeans = KMeans(n_clusters=4, init=initial_centroids, n_init=1, random_state=42)
-    clusters = kmeans.fit_predict(X_scaled)
-    pivot_data['Cluster'] = clusters
-
-    models = {}
-    X_tests = {}
-    y_tests = {}
-    metrics = {}
-
-    for cluster in range(kmeans.n_clusters):
-        # 군집 내 결측치 제거
-        cluster_data = pivot_data[pivot_data['Cluster'] == cluster].dropna()
-        X_cluster = cluster_data[[(target, 'Beijing'), ('Wind Speed (m/s)', 'Beijing'), ('Wind Direction (degrees)', 'Beijing')]]
-        y_cluster = cluster_data[y_columns]
-
-        if len(X_cluster) > 10:
-            X_train, X_test, y_train, y_test = train_test_split(X_cluster, y_cluster, test_size=0.2, random_state=42)
-            model = RandomForestRegressor(n_estimators=500, random_state=0)
-            model.fit(X_train, y_train)
-            models[cluster] = model
-            X_tests[cluster] = X_test
-            y_tests[cluster] = y_test
-
-            # 회귀 평가 지표 계산
-            y_pred_cont = model.predict(X_test)
-            mse, rmse, mae, r2 = evaluate_regression(y_test, y_pred_cont)
-            metrics[cluster] = {'MSE': mse, 'RMSE': rmse, 'MAE': mae, 'R2': r2}
-
-    return models, kmeans, X_tests, y_tests, pivot_data, scaler, mean_wind_direction, metrics
+    return svr_model, X_test, y_test, pivot_data, scaler, mean_wind_direction, metrics
 
 # 예측 함수
-def predict_values(models, kmeans, scaler, beijing_value, wind_speed, wind_direction):
+def predict_values_svr(model, scaler, beijing_value, wind_speed, wind_direction):
     beijing_input = np.array([[beijing_value, wind_speed, wind_direction]])
     beijing_scaled = scaler.transform(beijing_input)
-    cluster = kmeans.predict(beijing_scaled)[0]
-    model = models.get(cluster, None)
-
-    if model:
-        prediction = model.predict(beijing_input)[0]
-        city_names = [city for city in city_coords.keys() if city != 'Beijing']
-        return dict(zip(city_names, prediction))
-    else:
-        return None
+    prediction = model.predict(beijing_scaled)[0]  # MultiOutputRegressor는 2D 배열 반환
+    city_names = [city for city in city_coords.keys() if city != 'Beijing']
+    return dict(zip(city_names, prediction))
 
 # Streamlit 앱
-st.title("베이징 기반 미세먼지 예측 및 이동 경로 시각화 (계절별, KMeans + RandomForest)")
+st.title("베이징 기반 미세먼지 예측 및 이동 경로 시각화 (계절별 SVR)")
 
 # 데이터 로드
 data = load_data()
 
 if data is not None:
-    # 계절 선택
     seasons = ['봄', '여름', '가을', '겨울']
     selected_season = st.selectbox("계절을 선택하세요", seasons)
 
-    # 탭 생성
     tab1, tab2 = st.tabs(["PM2.5 예측", "PM10 예측"])
 
-    # 공통 입력값
-    wind_speed_options = [round(x * 0.5, 1) for x in range(0, 11)]  # 0부터 5까지 0.5 단위
-    selected_wind_speed = st.selectbox("풍속을 선택하세요 (m/s)", wind_speed_options, index=4)  # 기본값 2.0
+    wind_speed_options = [round(x * 0.5, 1) for x in range(0, 11)]
+    selected_wind_speed = st.selectbox("풍속을 선택하세요 (m/s)", wind_speed_options, index=4)
     days_after = int(st.number_input("몇 일 뒤의 변화를 예측할까요? (일)", min_value=1, max_value=30, value=3, step=1))
 
     # PM2.5 탭
     with tab1:
         st.subheader(f"{selected_season} 계절 기반 PM2.5 예측 및 이동 경로")
         
-        # 모델 학습 (PM2.5)
         try:
-            models_pm25, kmeans_pm25, X_tests_pm25, y_tests_pm25, pivot_data_pm25, scaler_pm25, mean_wind_direction, metrics_pm25 = train_model(data, selected_season, target='PM2.5 (µg/m³)')
+            svr_pm25, X_test_pm25, y_test_pm25, pivot_data_pm25, scaler_pm25, mean_wind_direction, metrics_pm25 = train_model_svr(data, selected_season, target='PM2.5 (µg/m³)')
         except KeyError as e:
             st.error(f"모델 학습 중 오류 발생: {e}")
             st.stop()
 
         st.write(f"{selected_season} 평균 풍향 (베이징): {mean_wind_direction:.2f}°")
-
-        # 모델 성능 가로 출력 및 클릭 상세 정보
         st.write("### 모델 성능 (PM2.5)")
-        cols = st.columns(4)  # 4개 군집을 가로로 배치
-        for cluster, col in enumerate(cols):
-            with col:
-                with st.expander(get_cluster_description(cluster, is_pm25=True)):
-                    st.write(f"MSE: {metrics_pm25[cluster]['MSE']:.4f}")
-                    st.write(f"RMSE: {metrics_pm25[cluster]['RMSE']:.4f}")
-                    st.write(f"MAE: {metrics_pm25[cluster]['MAE']:.4f}")
-                    st.write(f"R² 스코어: {metrics_pm25[cluster]['R2']:.4f}")
+        st.write(f"MSE: {metrics_pm25['MSE']:.4f}")
+        st.write(f"RMSE: {metrics_pm25['RMSE']:.4f}")
+        st.write(f"MAE: {metrics_pm25['MAE']:.4f}")
+        st.write(f"R² 스코어: {metrics_pm25['R2']:.4f}")
 
         beijing_pm25 = float(st.number_input("베이징 PM2.5 (µg/m³)", min_value=0.0, max_value=300.0, value=30.0, step=1.0, key="pm25"))
 
         if st.button("예측 및 이동 경로 보기", key="pm25_button"):
-            current_predictions = predict_values(models_pm25, kmeans_pm25, scaler_pm25, beijing_pm25, selected_wind_speed, mean_wind_direction)
+            current_predictions = predict_values_svr(svr_pm25, scaler_pm25, beijing_pm25, selected_wind_speed, mean_wind_direction)
             if current_predictions:
                 current_predictions['Beijing'] = beijing_pm25
 
@@ -321,30 +257,23 @@ if data is not None:
     with tab2:
         st.subheader(f"{selected_season} 계절 기반 PM10 예측 및 이동 경로")
         
-        # 모델 학습 (PM10)
         try:
-            models_pm10, kmeans_pm10, X_tests_pm10, y_tests_pm10, pivot_data_pm10, scaler_pm10, mean_wind_direction, metrics_pm10 = train_model(data, selected_season, target='PM10 (µg/m³)')
+            svr_pm10, X_test_pm10, y_test_pm10, pivot_data_pm10, scaler_pm10, mean_wind_direction, metrics_pm10 = train_model_svr(data, selected_season, target='PM10 (µg/m³)')
         except KeyError as e:
             st.error(f"모델 학습 중 오류 발생: {e}")
             st.stop()
 
         st.write(f"{selected_season} 평균 풍향 (베이징): {mean_wind_direction:.2f}°")
-
-        # 모델 성능 가로 출력 및 클릭 상세 정보
         st.write("### 모델 성능 (PM10)")
-        cols = st.columns(4)  # 4개 군집을 가로로 배치
-        for cluster, col in enumerate(cols):
-            with col:
-                with st.expander(get_cluster_description(cluster, is_pm25=False)):
-                    st.write(f"MSE: {metrics_pm10[cluster]['MSE']:.4f}")
-                    st.write(f"RMSE: {metrics_pm10[cluster]['RMSE']:.4f}")
-                    st.write(f"MAE: {metrics_pm10[cluster]['MAE']:.4f}")
-                    st.write(f"R² 스코어: {metrics_pm10[cluster]['R2']:.4f}")
+        st.write(f"MSE: {metrics_pm10['MSE']:.4f}")
+        st.write(f"RMSE: {metrics_pm10['RMSE']:.4f}")
+        st.write(f"MAE: {metrics_pm10['MAE']:.4f}")
+        st.write(f"R² 스코어: {metrics_pm10['R2']:.4f}")
 
         beijing_pm10 = float(st.number_input("베이징 PM10 (µg/m³)", min_value=0.0, max_value=500.0, value=75.0, step=1.0, key="pm10"))
 
         if st.button("예측 및 이동 경로 보기", key="pm10_button"):
-            current_predictions = predict_values(models_pm10, kmeans_pm10, scaler_pm10, beijing_pm10, selected_wind_speed, mean_wind_direction)
+            current_predictions = predict_values_svr(svr_pm10, scaler_pm10, beijing_pm10, selected_wind_speed, mean_wind_direction)
             if current_predictions:
                 current_predictions['Beijing'] = beijing_pm10
 
