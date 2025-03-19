@@ -7,14 +7,13 @@ import folium
 from streamlit_folium import st_folium
 
 # 1. 저장된 모델 및 데이터 로드
-scaler_pm25 = joblib.load('../models/rf/scaler_pm25.pkl')  # PM2.5용 StandardScaler
-scaler_pm10 = joblib.load('../models/rf/scaler_pm10.pkl')  # PM10용 StandardScaler
-kmeans = joblib.load('../models/rf/kmeans.pkl')  # K-Means 모델
-season_wind = joblib.load('../models/rf/season_wind.pkl')
-evaluation_scores_pm25 = joblib.load('../models/rf/evaluation_scores_pm25.pkl')
-evaluation_scores_pm10 = joblib.load('../models/rf/evaluation_scores_pm10.pkl')
+scaler_pm25 = joblib.load('models/rf/scaler_pm25.pkl')  # PM2.5용 StandardScaler
+scaler_pm10 = joblib.load('models/rf/scaler_pm10.pkl')  # PM10용 StandardScaler
+season_wind = joblib.load('models/rf/season_wind.pkl')
+evaluation_scores_pm25 = joblib.load('models/rf/evaluation_scores_pm25.pkl')
+evaluation_scores_pm10 = joblib.load('models/rf/evaluation_scores_pm10.pkl')
 
-# Random Forest 모델 로드 (PM2.5와 PM10)
+# RandomForest 모델 로드 (PM2.5와 PM10)
 seasons = ['봄', '여름', '가을', '겨울']
 nearby_cities = ['Seoul', 'Tokyo', 'Delhi', 'Bangkok', 'Busan', 'Daegu', 'Osaka', 
                  'Sapporo', 'Fukuoka', 'Kyoto', 'Almaty', 'Bishkek', 'Dushanbe', 
@@ -27,8 +26,8 @@ for season in seasons:
     rf_models_pm10[season] = {}
     for city in nearby_cities:
         try:
-            rf_models_pm25[season][city] = joblib.load(f'../models/rf/rf_pm25_{season}_{city}.pkl')
-            rf_models_pm10[season][city] = joblib.load(f'../models/rf/rf_pm10_{season}_{city}.pkl')
+            rf_models_pm25[season][city] = joblib.load(f'models/rf/rf_pm25_{season}_{city}.pkl')
+            rf_models_pm10[season][city] = joblib.load(f'models/rf/rf_pm10_{season}_{city}.pkl')
         except FileNotFoundError:
             continue
 
@@ -71,13 +70,9 @@ def predict_all_cities(season, china_value, pollutant='PM2.5'):
     wind_x = season_wind['Wind_X'][season]
     wind_y = season_wind['Wind_Y'][season]
     
-    # K-Means 클러스터링으로 클러스터 레이블 예측
-    kmeans_input = np.array([[china_value, china_value, wind_x, wind_y]])  # PM2.5와 PM10 값은 동일하게 사용 (예시)
-    cluster = kmeans.predict(kmeans_input)[0]
-    
     # 예측 시 DataFrame으로 입력 데이터 생성 (피처 이름 유지)
-    input_data = pd.DataFrame([[china_value, wind_x, wind_y, cluster]], 
-                              columns=[f'{pollutant} (µg/m³)', 'Wind_X', 'Wind_Y', 'Cluster'])
+    input_data = pd.DataFrame([[china_value, wind_x, wind_y]], 
+                              columns=[f'{pollutant} (µg/m³)', 'Wind_X', 'Wind_Y'])
     input_scaled = scaler.transform(input_data)
     
     predictions = {}
@@ -229,4 +224,3 @@ with tab2:
         st_folium(m, width=700, height=500, key=f"map_pm10_{season}")
     else:
         st.error(f"{season}에 대한 모델이 없습니다 (PM10).")
-
