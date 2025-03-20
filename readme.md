@@ -85,18 +85,20 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 # 데이터 학습 
 ## Gradient Boosting + Label Encode
 - 
-## Kmeans-앙상블 
-- 군집화 
 ## DBSCAN + XGBoost
 - 
 ## DBSCAN + Linear_regression
 - 
-## DBSCAN + RandomForest 
-- 
 ## DesitionTree_regression + Kmeans
 - 
-##  Kmean + RandomForest
+## Kmean + RandomForest
 - 
+## VSR
+- 
+## DBSCAN + RandomForest  
+- 
+## Kmeans-앙상블 
+- 군집화 
 
 # 학습 점수
 
