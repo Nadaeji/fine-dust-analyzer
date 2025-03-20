@@ -133,9 +133,7 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 
 # 학습 점수
 ## Gradient Boosting + Label Encode
-![이미지](./img/gradient_boosting_델리방콕분류결과.png)
-![이미지](./img/gradient_boosting_서울도쿄분류결과.png)
->>>>>>> 1c73a99ccee1d793f228f9ffe6850a9103622bfb
+
 ![이미지](./img/gradient_boosting_성능평가.png)
 
 # 학습 점수
@@ -160,4 +158,8 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 ## DBSCAN + Linear_regression
 
 # 예측
+
+## Gradient Boosting + Label Encode
+![이미지](./img/gradient_boosting_예측.png)
+![이미지](./img/gradient_boosting_모델평가점수.png)
 
