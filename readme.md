@@ -117,7 +117,10 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
     : 생성된 특성으로 선형 회귀 모델을 학습, 평가, 예측하고 결과를 시각화함
 
 ## Kmeans-앙상블 
-- 군집화 
+- **Kmeans의 목적**
+    - 미세먼지의 좋음 나쁨 매우 나쁨을 기준으로 군집화
+- **앙상블**
+    - gradientBoosting과 randomforest의 학습 결과를 stacking을 통해 성능을 높이기 위해 사용
 
 
 # 학습 점수
