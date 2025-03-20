@@ -83,7 +83,20 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 - 연도별 도시의 평균 초미세먼지 농도
 ![이미지](./img/city_year_pm25.png)
 # 데이터 학습 
-- DBScan, Gradient Boosting, Kmeans, Line, XG
+## Gradient Boosting + Label Encode
+- 
+## Kmeans-앙상블 
+- 군집화 
+## DBSCAN + XGBoost
+- 
+## DBSCAN + Linear_regression
+- 
+## DBSCAN + RandomForest 
+- 
+## DesitionTree_regression + Kmeans
+- 
+##  Kmean + RandomForest
+- 
 
 # 학습 점수
 
