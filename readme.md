@@ -103,8 +103,21 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
     - 베이징 미세먼지 농도와 월 데이터를 기반으로 클러스터를 생성.
     - 노이즈(-1로 표시된 클러스터)는 제외.
 ## DBSCAN + Linear_regression
-- 
-## DesitionTree_regression + Kmeans
+- 데이터 전처리 및 병합
+
+    : 2018년 이후 PM 데이터와 풍속/풍향 정보를 이용해 Wind_X, Wind_Y 등의 새로운 특성을 생성하고, 중국 및 주변국 데이터를 집계·병합함.
+
+- DBSCAN 군집화
+
+    : DBSCAN(eps=0.5, min_samples=5)을 통해 PM2.5 데이터를 군집화하여 PM2.5_Cluster 레이블을 생성함
+
+
+- 선형 회귀 모델 학습 및 평가
+
+    : 생성된 특성으로 선형 회귀 모델을 학습, 평가, 예측하고 결과를 시각화함
+
+
+## DecisionTree_regression + Kmeans
 - 
 ## Kmean + RandomForest
 - 
@@ -117,7 +130,23 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 
 
 # 학습 점수
+## DBSCAN + Linear_regression
+![이미지](./img/dbscan_linear_regression_결과.png)
+### PM2.5
+![이미지](./img/dbscan_linear_regression_평가점수_PM2.5.png)
+### PM10
+![이미지](./img/dbscan_linear_regression_평가점수_PM10.png)
 
+<<<<<<< HEAD
+=======
+## Gradient Boosting + Label Encode
+
+=======
+## Kmeans-앙상블
+- 
+
+# 학습 점수
+>>>>>>> d41d191257a957ee8435b28cba8f40e89bccfe7d
 ## Gradient Boosting + Label Encode
 
 ![이미지](./img/gradient_boosting_성능평가.png)
@@ -160,9 +189,20 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 ![이미지](./img/gradient_boosting_예측.png)
 ![이미지](./img/gradient_boosting_모델평가점수.png)
 
+<<<<<<< HEAD
 ## Kmeans-앙상블 
 
 
 <figure  style="text-align: center; height:300px; width:450px;">
 <img src="./img/streamlit Kmeans 예측.png">
 </figure>
+=======
+
+## DBSCAN + Linear_regression
+### PM2.5
+![이미지](./img/dbscan_linear_regression_지도_PM2.5.png)
+![이미지](./img/dbscan_linear_regression_예측_PM2.5.png)
+### PM10
+![이미지](./img/dbscan_linear_regression_지도_PM10.png)
+![이미지](./img/dbscan_linear_regression_예측_PM10.png)
+>>>>>>> d41d191257a957ee8435b28cba8f40e89bccfe7d
