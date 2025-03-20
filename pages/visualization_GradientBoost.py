@@ -23,7 +23,8 @@ def pm25_to_grade(pm25):
     else:
         return "나쁨"
 
-# 모델 학습 (도시별 분류 모델)
+# 모델 학습 (도시별 분류 모델) - 한 번만 학습하도록 캐싱
+@st.cache_resource
 def train_model(data):
     pivot_data = data.pivot(index='Date', columns='City', values='PM2.5 (µg/m³)').reset_index().fillna(0)
     X = pivot_data[['Beijing']]  # 입력 변수
@@ -39,6 +40,8 @@ def train_model(data):
     # 클래스 분포 확인 및 모델 학습
     models = {}
     evaluation_scores = {}
+    
+    target_cities = [col for col in pivot_data.columns if col not in ['Date', 'Beijing', 'Incheon', 'Vladivostok']]
     for city in target_cities:
         unique_classes = np.unique(y_grades[city])
         if len(unique_classes) < 2:
