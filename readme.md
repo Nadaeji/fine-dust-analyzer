@@ -162,10 +162,11 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 ![이미지](./img/gradient_boosting_예측.png)
 ![이미지](./img/gradient_boosting_모델평가점수.png)
 
-## Kmeans-앙상블 
 
-<figure  style="text-align: center; height:300px; width:450px;">
-<img src="./img/streamlit Kmeans 예측.png">
+## DBSCAN + XGBoost
+
+<figure  style="text-align: center; height:200px; width:450px;">
+<img src="./img/streamlit xgboots 예측.png">
 </figure>
 
 ## DBSCAN + Linear_regression
@@ -175,3 +176,10 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 ### PM10
 ![이미지](./img/dbscan_linear_regression_지도_PM10.png)
 ![이미지](./img/dbscan_linear_regression_예측_PM10.png)
+
+## Kmeans-앙상블 
+
+<figure  style="text-align: center; height:300px; width:450px;">
+<img src="./img/streamlit Kmeans 예측.png">
+</figure>
+
