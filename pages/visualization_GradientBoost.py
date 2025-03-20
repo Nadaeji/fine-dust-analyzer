@@ -1,9 +1,11 @@
 import pandas as pd
 import streamlit as st
-from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 import folium
 from streamlit_folium import st_folium
+import numpy as np
 
 # 데이터 로드 및 전처리
 @st.cache_data
@@ -12,55 +14,75 @@ def load_data():
     data['Date'] = pd.to_datetime(data['Date'])
     return data
 
-# 모델 학습 (도시별 모델, 계절 구분 없음)
+# PM2.5 등급 변환 함수
+def pm25_to_grade(pm25):
+    if pm25 <= 15:
+        return "좋음"
+    elif pm25 <= 35:
+        return "보통"
+    else:
+        return "나쁨"
+
+# 모델 학습 (도시별 분류 모델)
 def train_model(data):
     pivot_data = data.pivot(index='Date', columns='City', values='PM2.5 (µg/m³)').reset_index().fillna(0)
     X = pivot_data[['Beijing']]  # 입력 변수
-    # 모든 도시를 동적으로 추출 (Beijing 제외)
     target_cities = [col for col in pivot_data.columns if col not in ['Date', 'Beijing']]
     
-    # 데이터 분할
-    X_train, X_test, y_train, y_test = train_test_split(X, pivot_data[target_cities], test_size=0.2, random_state=42)
+    # 타겟 데이터 등급으로 변환
+    y_grades = {}
+    le = LabelEncoder()
+    for city in target_cities:
+        grades = [pm25_to_grade(pm25) for pm25 in pivot_data[city]]
+        y_grades[city] = le.fit_transform(grades)
     
-    # 모델 학습
+    # 클래스 분포 확인 및 모델 학습
     models = {}
     evaluation_scores = {}
     for city in target_cities:
-        model = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=42)
-        model.fit(X_train, y_train[city])
+        unique_classes = np.unique(y_grades[city])
+        if len(unique_classes) < 2:
+            st.warning(f"{city}의 데이터에 클래스가 1개뿐입니다. 모델을 학습시키지 않습니다.")
+            continue
+        
+        # 데이터 분할
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y_grades[city], test_size=0.2, random_state=42)
+        
+        # 모델 학습
+        model = GradientBoostingClassifier(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=42)
+        model.fit(X_train, y_train)
         models[city] = model
         # 평가 점수 계산
-        score = model.score(X_test, y_test[city])
-        mse = ((model.predict(X_test) - y_test[city]) ** 2).mean()
+        y_pred = model.predict(X_test)
+        r2 = model.score(X_test, y_test)
+        mae = (abs(y_pred - y_test)).mean()
+        mse = ((y_pred - y_test) ** 2).mean()
         rmse = mse ** 0.5
-        mae = (abs(model.predict(X_test) - y_test[city])).mean()
-        evaluation_scores[city] = {'R²': score, 'MSE': mse, 'RMSE': rmse, 'MAE': mae}
-
-    return models, evaluation_scores, target_cities
+        evaluation_scores[city] = {'R²': r2, 'MAE': mae, 'MSE': mse, 'RMSE': rmse}
+    
+    return models, evaluation_scores, target_cities, le
 
 # 예측 함수
-def predict_pm25(models, beijing_pm25):
+def predict_pm25_grade(models, beijing_pm25, label_encoder):
     input_value = [[beijing_pm25]]
     predictions = {}
     for city, model in models.items():
-        predictions[city] = model.predict(input_value)[0]
-    predictions['Beijing'] = beijing_pm25
+        pred_encoded = model.predict(input_value)[0]
+        predictions[city] = label_encoder.inverse_transform([pred_encoded])[0]
+    predictions['Beijing'] = pm25_to_grade(beijing_pm25)
     return predictions
 
-# 등급 및 색상 계산 함수
-def get_grade(value, pollutant='PM2.5'):
-    if pollutant == 'PM2.5':
-        if value <= 10:
-            return "좋음", "green"
-        elif value <= 25:
-            return "보통", "blue"
-        elif value <= 50:
-            return "나쁨", "orange"
-        else:
-            return "매우 나쁨", "red"
-    return None, None
+# 등급에 따른 색상 계산 함수
+def get_color(grade):
+    if grade == "좋음":
+        return "green"
+    elif grade == "보통":
+        return "blue"
+    else:
+        return "orange"
 
-# 도시 좌표 딕셔너리
+# 도시 좌표 딕셔너리 (기존 코드에서 재사용)
 city_coords = {
     "Seoul": [37.5665, 126.9780], "Tokyo": [35.6895, 139.6917], "Beijing": [39.9042, 116.4074],
     "Delhi": [28.7041, 77.1025], "Bangkok": [13.7563, 100.5018], "Busan": [35.1796, 129.0756],
@@ -73,7 +95,7 @@ city_coords = {
     "Ulaanbaatar": [47.8864, 106.9057], "Irkutsk": [52.2869, 104.2964],
 }
 
-# 도시 이름 매핑 (영어 → 한국어)
+# 도시 이름 매핑 (영어 → 한국어, 기존 코드에서 재사용)
 city_names_kr = {
     "Seoul": "서울", "Tokyo": "도쿄", "Beijing": "베이징", "Delhi": "델리", 
     "Bangkok": "방콕", "Busan": "부산", "Daegu": "대구", "Osaka": "오사카", 
@@ -85,38 +107,37 @@ city_names_kr = {
 }
 
 # Streamlit 앱
-st.title("베이징 미세먼지가 주변국에 미치는 영향")
+st.title("베이징 미세먼지가 주변국에 미치는 영향 (등급 예측)")
 
 # 데이터 로드 및 모델 학습
 data = load_data()
-models, evaluation_scores, target_cities = train_model(data)
+models, evaluation_scores, target_cities, label_encoder = train_model(data)
 
-# 탭 생성 (PM2.5만 다룸)
-tab1 = st.tabs(["PM2.5 예측"])[0]
+# 탭 생성
+tab1 = st.tabs(["PM2.5 등급 예측"])[0]
 
-# PM2.5 탭
+# PM2.5 등급 예측 탭
 with tab1:
-    st.header("PM2.5 예측")
+    st.header("PM2.5 등급 예측")
 
-    # 입력값 수집 (계절 선택 제거)
+    # 입력값 수집
     beijing_pm25 = st.slider("베이징 PM2.5 (µg/m³)", 0.0, 200.0, 50.0, key="pm25_input")
 
     # 예측 및 지도 표시
-    predictions = predict_pm25(models, beijing_pm25)
+    predictions = predict_pm25_grade(models, beijing_pm25, label_encoder)
 
     if predictions:
-        # 예측 결과 섹션 (expander로 묶음)
-        with st.expander("주변국 PM2.5 예측"):
+        # 예측 결과 섹션
+        with st.expander("주변국 PM2.5 등급 예측"):
             pred_table_data = {
                 "도시": [city_names_kr.get(city, city) for city in predictions.keys()],
-                "PM2.5 (µg/m³)": [f"{pm25:.2f}" for pm25 in predictions.values()],
-                "상태": [get_grade(pm25, 'PM2.5')[0] for pm25 in predictions.values()]
+                "PM2.5 등급": [grade for grade in predictions.values()]
             }
             pred_df = pd.DataFrame(pred_table_data)
             st.dataframe(pred_df, use_container_width=True)
 
-        # 모델 평가 점수 섹션 (expander로 묶음)
-        with st.expander("모델 평가 점수 (PM2.5)"):
+        # 모델 평가 점수 섹션
+        with st.expander("모델 평가 점수 (PM2.5 등급)"):
             eval_table_data = {
                 "도시": [city_names_kr.get(city, city) for city in models.keys()],
                 "MSE": [evaluation_scores[city]['MSE'] for city in models.keys()],
@@ -128,18 +149,18 @@ with tab1:
             st.dataframe(eval_df, use_container_width=True)
 
         # 지도 생성
-        st.subheader("지도 (PM2.5)")
+        st.subheader("지도 (PM2.5 등급)")
         m = folium.Map(location=[35, 120], zoom_start=4)
         
-        # 예측값을 지도에 표시 (좌표가 있는 도시만)
-        for city, pm25 in predictions.items():
+        # 예측값을 지도에 표시
+        for city, grade in predictions.items():
             if city in city_coords:
                 lat, lon = city_coords[city]
-                grade, color = get_grade(pm25, 'PM2.5')
+                color = get_color(grade)
                 folium.CircleMarker(
                     location=[lat, lon],
-                    radius=pm25 / 10,
-                    popup=f"{city_names_kr.get(city, city)}: {pm25:.2f} µg/m³ ({grade})",
+                    radius=10,  # 고정된 크기 사용
+                    popup=f"{city_names_kr.get(city, city)}: {grade}",
                     color=color,
                     fill=True,
                     fill_opacity=0.7
@@ -148,7 +169,7 @@ with tab1:
         # 지도 표시
         st_folium(m, width=700, height=500, key="map_pm25")
     else:
-        st.error("모델이 없습니다 (PM2.5).")
+        st.error("모델이 없습니다 (PM2.5 등급).")
 
 # 데이터 정보
 with st.expander("원본 데이터 미리보기"):
