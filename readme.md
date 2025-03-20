@@ -85,6 +85,11 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 # 데이터 학습 
 - DBScan, Gradient Boosting, Kmeans, Line, XG
 
+- Gradient Boosting
+![이미지](./img/gradient_boosting_델리방콕분류결과.png)
+![이미지](./img/gradient_boosting_서울도쿄분류결과.png)
+![이미지](./img/gradient_boosting_성능평가.png)
+
 # 학습 점수
 
 # 예측
