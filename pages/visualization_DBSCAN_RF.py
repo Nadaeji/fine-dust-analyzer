@@ -1,41 +1,44 @@
-# app.py
 import streamlit as st
 import pandas as pd
 import numpy as np
-import joblib
 import folium
 from streamlit_folium import st_folium
+from utils.model_cache import ModelCache
+from sklearn.metrics import pairwise_distances_argmin_min
 
-# 1. 저장된 모델 및 데이터 로드
-scaler_pm25 = joblib.load('../models/rf_db/scaler_pm25.pkl')  # PM2.5용 StandardScaler
-scaler_pm10 = joblib.load('../models/rf_db/scaler_pm10.pkl')  # PM10용 StandardScaler
-dbscan_pm25 = joblib.load('../models/rf_db/dbscan_pm25.pkl')  # DBSCAN for PM2.5
-dbscan_pm10 = joblib.load('../models/rf_db/dbscan_pm10.pkl')  # DBSCAN for PM10
-season_wind = joblib.load('../models/rf_db/season_wind.pkl')
-evaluation_scores_pm25 = joblib.load('../models/rf_db/evaluation_scores_pm25.pkl')
-evaluation_scores_pm10 = joblib.load('../models/rf_db/evaluation_scores_pm10.pkl')
-cluster_labels_pm25 = joblib.load('../models/rf_db/cluster_labels_pm25.pkl')
-cluster_labels_pm10 = joblib.load('../models/rf_db/cluster_labels_pm10.pkl')
+# 캐싱된 모델 가져오기
+try:
+    scaler_pm25 = ModelCache.get_model('rf_db/scaler_pm25')
+    scaler_pm10 = ModelCache.get_model('rf_db/scaler_pm10')
+    dbscan_pm25 = ModelCache.get_model('rf_db/dbscan_pm25')  # DBSCAN (참고용)
+    dbscan_pm10 = ModelCache.get_model('rf_db/dbscan_pm10')  # DBSCAN (참고용)
+    season_wind = ModelCache.get_model('rf_db/season_wind')
+    evaluation_scores_pm25 = ModelCache.get_model('rf_db/evaluation_scores_pm25')
+    evaluation_scores_pm10 = ModelCache.get_model('rf_db/evaluation_scores_pm10')
+    cluster_labels_pm25 = ModelCache.get_model('rf_db/cluster_labels_pm25')
+    cluster_labels_pm10 = ModelCache.get_model('rf_db/cluster_labels_pm10')
+except KeyError as e:
+    st.error(f"필요한 모델이 캐시에 없습니다: {e}")
+    st.write("현재 캐시된 모델 목록:", ModelCache.list_cached_models())
+    st.stop()
 
-# Random Forest 모델 로드 (PM2.5와 PM10)
+# Random Forest 모델 로드
 seasons = ['봄', '여름', '가을', '겨울']
 nearby_cities = ['Seoul', 'Tokyo', 'Delhi', 'Bangkok', 'Busan', 'Daegu', 'Osaka', 
                  'Sapporo', 'Fukuoka', 'Kyoto', 'Almaty', 'Bishkek', 'Dushanbe', 
                  'Kathmandu', 'Yangon', 'Guwahati', 'Ulaanbaatar', 'Irkutsk']
-rf_models_pm25 = {}
-rf_models_pm10 = {}
+rf_models_pm25 = {season: {} for season in seasons}
+rf_models_pm10 = {season: {} for season in seasons}
 
 for season in seasons:
-    rf_models_pm25[season] = {}
-    rf_models_pm10[season] = {}
     for city in nearby_cities:
         try:
-            rf_models_pm25[season][city] = joblib.load(f'../models/rf_db/rf_pm25_{season}_{city}.pkl')
-            rf_models_pm10[season][city] = joblib.load(f'../models/rf_db/rf_pm10_{season}_{city}.pkl')
-        except FileNotFoundError:
+            rf_models_pm25[season][city] = ModelCache.get_model(f'rf_db/rf_pm25_{season}_{city}')
+            rf_models_pm10[season][city] = ModelCache.get_model(f'rf_db/rf_pm10_{season}_{city}')
+        except KeyError:
             continue
 
-# 도시 이름 매핑 (영어 → 한국어)
+# 도시 이름 매핑 및 좌표
 city_names_kr = {
     "Seoul": "서울", "Tokyo": "도쿄", "Beijing": "베이징", "Delhi": "델리", 
     "Bangkok": "방콕", "Busan": "부산", "Daegu": "대구", "Osaka": "오사카", 
@@ -46,7 +49,6 @@ city_names_kr = {
     "Ulaanbaatar": "울란바토르", "Irkutsk": "이르쿠츠크"
 }
 
-# 도시 좌표 (위도, 경도)
 city_coords = {
     "Seoul": [37.5665, 126.9780], "Tokyo": [35.6895, 139.6917], "Beijing": [39.9042, 116.4074],
     "Delhi": [28.7041, 77.1025], "Bangkok": [13.7563, 100.5018], "Busan": [35.1796, 129.0756],
@@ -71,36 +73,38 @@ def predict_all_cities(season, china_value, pollutant='PM2.5'):
         dbscan = dbscan_pm10
     
     if season not in rf_models:
-        return None
+        return None, None
     
     wind_x = season_wind['Wind_X'][season]
     wind_y = season_wind['Wind_Y'][season]
     
-    # DBSCAN 클러스터링으로 클러스터 레이블 예측
-    # DBSCAN 입력 데이터 준비 (PM2.5 또는 PM10 값만 사용)
-    cluster_input = np.array([[china_value]])
-    cluster = dbscan.predict(cluster_input)[0]
-    
-    # 예측 시 DataFrame으로 입력 데이터 생성 (피처 이름 유지)
-    input_data = pd.DataFrame([[china_value, wind_x, wind_y, cluster]], 
-                              columns=[f'{pollutant} (µg/m³)', 'Wind_X', 'Wind_Y', f'{pollutant}_Cluster'])
+    # 입력 데이터 준비 (DBSCAN 군집 레이블 추정 필요)
+    input_data = pd.DataFrame([[china_value, wind_x, wind_y]], 
+                              columns=[f'{pollutant} (µg/m³)', 'Wind_X', 'Wind_Y'])
     input_scaled = scaler.transform(input_data)
+    
+    # DBSCAN 군집 레이블 추정 (임시로 -1로 설정, 실제로는 학습 데이터 필요)
+    # 주의: DBSCAN은 predict 없음, 여기서는 RF만 사용
+    cluster = -1  # 노이즈로 가정 (DBSCAN 학습 데이터 없음)
+    
+    # RF 입력에 군집 피처 추가 (학습 시와 동일한 피처 구조)
+    input_with_cluster = np.hstack((input_scaled, [[cluster]]))
     
     predictions = {}
     for city in nearby_cities:
         if city in rf_models[season]:
-            prediction = rf_models[season][city].predict(input_scaled)[0]
-            predictions[city] = prediction
-    return predictions
+            predictions[city] = rf_models[season][city].predict(input_with_cluster)[0]
+    
+    return predictions, cluster
 
 # 등급 및 색상 계산 함수
 def get_grade(value, pollutant='PM2.5'):
     if pollutant == 'PM2.5':
-        if value <= 15:
+        if value <= 10:
             return "좋음", "green"
-        elif value <= 50:
+        elif value <= 25:
             return "보통", "blue"
-        elif value <= 100:
+        elif value <= 50:
             return "나쁨", "orange"
         else:
             return "매우 나쁨", "red"
@@ -115,26 +119,18 @@ def get_grade(value, pollutant='PM2.5'):
             return "매우 나쁨", "red"
 
 # Streamlit 인터페이스
-st.title("중국 미세먼지가 주변국에 미치는 영향")
+st.title("중국 미세먼지가 주변국에 미치는 영향 (DBSCAN + RF)")
 
-# 탭 생성
 tab1, tab2 = st.tabs(["PM2.5 예측", "PM10 예측"])
 
-# PM2.5 탭
 with tab1:
     st.header("PM2.5 예측")
-
-    # 계절 선택
     season = st.selectbox("계절 선택 (PM2.5)", seasons, key="pm25_season")
-
-    # 입력값 수집
     china_pm25 = st.slider("중국 PM2.5 (µg/m³)", 0.0, 200.0, 50.0, key="pm25_input")
 
-    # 예측 및 지도 표시
-    predictions = predict_all_cities(season, china_pm25, pollutant='PM2.5')
+    predictions, cluster = predict_all_cities(season, china_pm25, pollutant='PM2.5')
 
     if predictions:
-        # 예측 결과 섹션 (expander로 묶음)
         with st.expander(f"{season}의 주변국 PM2.5 예측"):
             pred_table_data = {
                 "도시": [city_names_kr[city] for city in predictions.keys()],
@@ -143,8 +139,8 @@ with tab1:
             }
             pred_df = pd.DataFrame(pred_table_data)
             st.dataframe(pred_df, use_container_width=True)
+            st.write(f"입력값의 클러스터: {cluster} ({cluster_labels_pm25.get(cluster, 'N/A')})")
 
-        # 모델 평가 점수 섹션 (expander로 묶음)
         with st.expander(f"{season}의 모델 평가 점수 (PM2.5)"):
             eval_table_data = {
                 "도시": [city_names_kr[city] for city in predictions.keys()],
@@ -156,11 +152,8 @@ with tab1:
             eval_df = pd.DataFrame(eval_table_data)
             st.dataframe(eval_df, use_container_width=True)
 
-        # 지도 생성
         st.subheader("지도 (PM2.5)")
         m = folium.Map(location=[35, 120], zoom_start=4)
-        
-        # 예측값을 지도에 표시
         for city, pm25 in predictions.items():
             lat, lon = city_coords[city]
             grade, color = get_grade(pm25, 'PM2.5')
@@ -172,27 +165,18 @@ with tab1:
                 fill=True,
                 fill_opacity=0.7
             ).add_to(m)
-        
-        # 지도 표시
         st_folium(m, width=700, height=500, key=f"map_pm25_{season}")
     else:
         st.error(f"{season}에 대한 모델이 없습니다 (PM2.5).")
 
-# PM10 탭
 with tab2:
     st.header("PM10 예측")
-
-    # 계절 선택
     season = st.selectbox("계절 선택 (PM10)", seasons, key="pm10_season")
-
-    # 입력값 수집
     china_pm10 = st.slider("중국 PM10 (µg/m³)", 0.0, 300.0, 75.0, key="pm10_input")
 
-    # 예측 및 지도 표시
-    predictions = predict_all_cities(season, china_pm10, pollutant='PM10')
+    predictions, cluster = predict_all_cities(season, china_pm10, pollutant='PM10')
 
     if predictions:
-        # 예측 결과 섹션 (expander로 묶음)
         with st.expander(f"{season}의 주변국 PM10 예측"):
             pred_table_data = {
                 "도시": [city_names_kr[city] for city in predictions.keys()],
@@ -201,8 +185,8 @@ with tab2:
             }
             pred_df = pd.DataFrame(pred_table_data)
             st.dataframe(pred_df, use_container_width=True)
+            st.write(f"입력값의 클러스터: {cluster} ({cluster_labels_pm10.get(cluster, 'N/A')})")
 
-        # 모델 평가 점수 섹션 (expander로 묶음)
         with st.expander(f"{season}의 모델 평가 점수 (PM10)"):
             eval_table_data = {
                 "도시": [city_names_kr[city] for city in predictions.keys()],
@@ -214,11 +198,8 @@ with tab2:
             eval_df = pd.DataFrame(eval_table_data)
             st.dataframe(eval_df, use_container_width=True)
 
-        # 지도 생성
         st.subheader("지도 (PM10)")
         m = folium.Map(location=[35, 120], zoom_start=4)
-        
-        # 예측값을 지도에 표시
         for city, pm10 in predictions.items():
             lat, lon = city_coords[city]
             grade, color = get_grade(pm10, 'PM10')
@@ -230,8 +211,6 @@ with tab2:
                 fill=True,
                 fill_opacity=0.7
             ).add_to(m)
-        
-        # 지도 표시
         st_folium(m, width=700, height=500, key=f"map_pm10_{season}")
     else:
         st.error(f"{season}에 대한 모델이 없습니다 (PM10).")

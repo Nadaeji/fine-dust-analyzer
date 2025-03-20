@@ -1,35 +1,37 @@
-# app.py
 import streamlit as st
 import pandas as pd
 import numpy as np
-import joblib
 import folium
 from streamlit_folium import st_folium
+from utils.model_cache import ModelCache
 
-# 1. 저장된 모델 및 데이터 로드
-scaler_pm25 = joblib.load('models/svr/scaler_pm25.pkl')  # PM2.5용 StandardScaler
-scaler_pm10 = joblib.load('models/svr/scaler_pm10.pkl')  # PM10용 StandardScaler
-season_wind = joblib.load('models/svr/season_wind.pkl')
-evaluation_scores_pm25 = joblib.load('models/svr/evaluation_scores_pm25.pkl')
-evaluation_scores_pm10 = joblib.load('models/svr/evaluation_scores_pm10.pkl')
+# 캐싱된 모델 가져오기
+try:
+    scaler_pm25 = ModelCache.get_model('svr/scaler_pm25')
+    scaler_pm10 = ModelCache.get_model('svr/scaler_pm10')
+    season_wind = ModelCache.get_model('svr/season_wind')
+    evaluation_scores_pm25 = ModelCache.get_model('svr/evaluation_scores_pm25')
+    evaluation_scores_pm10 = ModelCache.get_model('svr/evaluation_scores_pm10')
+except KeyError as e:
+    st.error(f"필요한 모델이 캐시에 없습니다: {e}")
+    st.write("현재 캐시된 모델 목록:", ModelCache.list_cached_models())
+    st.stop()
 
 # SVR 모델 로드 (PM2.5와 PM10)
 seasons = ['봄', '여름', '가을', '겨울']
 nearby_cities = ['Seoul', 'Tokyo', 'Delhi', 'Bangkok', 'Busan', 'Daegu', 'Osaka', 
                  'Sapporo', 'Fukuoka', 'Kyoto', 'Almaty', 'Bishkek', 'Dushanbe', 
                  'Kathmandu', 'Yangon', 'Guwahati', 'Ulaanbaatar', 'Irkutsk']
-svr_models_pm25 = {}
-svr_models_pm10 = {}
+svr_models_pm25 = {season: {} for season in seasons}
+svr_models_pm10 = {season: {} for season in seasons}
 
 for season in seasons:
-    svr_models_pm25[season] = {}
-    svr_models_pm10[season] = {}
     for city in nearby_cities:
         try:
-            svr_models_pm25[season][city] = joblib.load(f'models/svr/svr_pm25_{season}_{city}.pkl')
-            svr_models_pm10[season][city] = joblib.load(f'models/svr/svr_pm10_{season}_{city}.pkl')
-        except FileNotFoundError:
-            continue
+            svr_models_pm25[season][city] = ModelCache.get_model(f'svr/svr_pm25_{season}_{city}')
+            svr_models_pm10[season][city] = ModelCache.get_model(f'svr/svr_pm10_{season}_{city}')
+        except KeyError:
+            continue  # 캐시에 없는 모델은 건너뜀
 
 # 도시 이름 매핑 (영어 → 한국어)
 city_names_kr = {
@@ -104,7 +106,7 @@ def get_grade(value, pollutant='PM2.5'):
             return "매우 나쁨", "red"
 
 # Streamlit 인터페이스
-st.title("중국 미세먼지가 주변국에 미치는 영향")
+st.title("중국 미세먼지가 주변국에 미치는 영향 (SVR)")
 
 # 탭 생성
 tab1, tab2 = st.tabs(["PM2.5 예측", "PM10 예측"])
@@ -123,7 +125,7 @@ with tab1:
     predictions = predict_all_cities(season, china_pm25, pollutant='PM2.5')
 
     if predictions:
-        # 예측 결과 섹션 (expander로 묶음)
+        # 예측 결과 섹션
         with st.expander(f"{season}의 주변국 PM2.5 예측"):
             pred_table_data = {
                 "도시": [city_names_kr[city] for city in predictions.keys()],
@@ -133,7 +135,7 @@ with tab1:
             pred_df = pd.DataFrame(pred_table_data)
             st.dataframe(pred_df, use_container_width=True)
 
-        # 모델 평가 점수 섹션 (expander로 묶음)
+        # 모델 평가 점수 섹션
         with st.expander(f"{season}의 모델 평가 점수 (PM2.5)"):
             eval_table_data = {
                 "도시": [city_names_kr[city] for city in predictions.keys()],
@@ -162,7 +164,6 @@ with tab1:
                 fill_opacity=0.7
             ).add_to(m)
         
-        # 지도 표시
         st_folium(m, width=700, height=500, key=f"map_pm25_{season}")
     else:
         st.error(f"{season}에 대한 모델이 없습니다 (PM2.5).")
@@ -181,7 +182,7 @@ with tab2:
     predictions = predict_all_cities(season, china_pm10, pollutant='PM10')
 
     if predictions:
-        # 예측 결과 섹션 (expander로 묶음)
+        # 예측 결과 섹션
         with st.expander(f"{season}의 주변국 PM10 예측"):
             pred_table_data = {
                 "도시": [city_names_kr[city] for city in predictions.keys()],
@@ -191,7 +192,7 @@ with tab2:
             pred_df = pd.DataFrame(pred_table_data)
             st.dataframe(pred_df, use_container_width=True)
 
-        # 모델 평가 점수 섹션 (expander로 묶음)
+        # 모델 평가 점수 섹션
         with st.expander(f"{season}의 모델 평가 점수 (PM10)"):
             eval_table_data = {
                 "도시": [city_names_kr[city] for city in predictions.keys()],
@@ -220,7 +221,6 @@ with tab2:
                 fill_opacity=0.7
             ).add_to(m)
         
-        # 지도 표시
         st_folium(m, width=700, height=500, key=f"map_pm10_{season}")
     else:
         st.error(f"{season}에 대한 모델이 없습니다 (PM10).")

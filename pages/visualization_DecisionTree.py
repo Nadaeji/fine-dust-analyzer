@@ -1,38 +1,40 @@
-# app.py
 import streamlit as st
 import pandas as pd
 import numpy as np
-import joblib
 import folium
 from streamlit_folium import st_folium
+from utils.model_cache import ModelCache
 
-# 1. 저장된 모델 및 데이터 로드
-scaler_pm25 = joblib.load('models/dt/scaler_pm25.pkl')  # PM2.5용 StandardScaler
-scaler_pm10 = joblib.load('models/dt/scaler_pm10.pkl')  # PM10용 StandardScaler
-kmeans_pm25 = joblib.load('models/dt/kmeans_pm25.pkl')  # PM2.5용 KMeans 모델
-kmeans_pm10 = joblib.load('models/dt/kmeans_pm10.pkl')  # PM10용 KMeans 모델
-season_wind = joblib.load('models/dt/season_wind.pkl')
-evaluation_scores_pm25 = joblib.load('models/dt/evaluation_scores_pm25.pkl')
-evaluation_scores_pm10 = joblib.load('models/dt/evaluation_scores_pm10.pkl')
-cluster_labels_pm25 = joblib.load('models/dt/cluster_labels_pm25.pkl')  # PM2.5 클러스터 라벨
-cluster_labels_pm10 = joblib.load('models/dt/cluster_labels_pm10.pkl')  # PM10 클러스터 라벨
+# 캐싱된 모델 가져오기 (에러 처리 추가)
+try:
+    scaler_pm25 = ModelCache.get_model("dt/scaler_pm25")
+    scaler_pm10 = ModelCache.get_model("dt/scaler_pm10")
+    kmeans_pm25 = ModelCache.get_model("dt/kmeans_pm25")
+    kmeans_pm10 = ModelCache.get_model("dt/kmeans_pm10")
+    season_wind = ModelCache.get_model("dt/season_wind")
+    evaluation_scores_pm25 = ModelCache.get_model("dt/evaluation_scores_pm25")
+    evaluation_scores_pm10 = ModelCache.get_model("dt/evaluation_scores_pm10")
+    cluster_labels_pm25 = ModelCache.get_model("dt/cluster_labels_pm25")
+    cluster_labels_pm10 = ModelCache.get_model("dt/cluster_labels_pm10")
+except KeyError as e:
+    st.error(f"필요한 모델이 캐시에 없습니다: {e}")
+    st.stop()
 
-# DecisionTree 모델 로드 (PM2.5와 PM10)
+# 계절 및 도시 정의
 seasons = ['봄', '여름', '가을', '겨울']
 nearby_cities = ['Seoul', 'Tokyo', 'Delhi', 'Bangkok', 'Busan', 'Daegu', 'Osaka', 
                  'Sapporo', 'Fukuoka', 'Kyoto', 'Almaty', 'Bishkek', 'Dushanbe', 
                  'Kathmandu', 'Yangon', 'Guwahati', 'Ulaanbaatar', 'Irkutsk']
-dt_models_pm25 = {}
-dt_models_pm10 = {}
 
+# DecisionTree 모델 로드
+dt_models_pm25 = {season: {} for season in seasons}
+dt_models_pm10 = {season: {} for season in seasons}
 for season in seasons:
-    dt_models_pm25[season] = {}
-    dt_models_pm10[season] = {}
     for city in nearby_cities:
         try:
-            dt_models_pm25[season][city] = joblib.load(f'models/dt/dt_pm25_{season}_{city}.pkl')
-            dt_models_pm10[season][city] = joblib.load(f'models/dt/dt_pm10_{season}_{city}.pkl')
-        except FileNotFoundError:
+            dt_models_pm25[season][city] = ModelCache.get_model(f"dt/dt_pm25_{season}_{city}")
+            dt_models_pm10[season][city] = ModelCache.get_model(f"dt/dt_pm10_{season}_{city}")
+        except KeyError:
             continue
 
 # 도시 이름 매핑 (영어 → 한국어)
