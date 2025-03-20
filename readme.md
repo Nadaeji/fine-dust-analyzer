@@ -145,6 +145,13 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 
 ## Gradient Boosting + Label Encode
 
+=======
+## Kmeans-앙상블
+- 
+
+# 학습 점수
+## Gradient Boosting + Label Encode
+
 ![이미지](./img/gradient_boosting_성능평가.png)
 
 # 학습 점수
@@ -169,6 +176,12 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 ## DBSCAN + Linear_regression
 
 # 예측
+
+## Gradient Boosting + Label Encode
+![이미지](./img/gradient_boosting_예측.png)
+![이미지](./img/gradient_boosting_모델평가점수.png)
+
+
 ## DBSCAN + Linear_regression
 ### PM2.5
 ![이미지](./img/dbscan_linear_regression_지도_PM2.5.png)
