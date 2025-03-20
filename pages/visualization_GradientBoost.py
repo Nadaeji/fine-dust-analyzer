@@ -2,32 +2,41 @@ import pandas as pd
 import streamlit as st
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import train_test_split
-import plotly.express as px
+import folium
+from streamlit_folium import st_folium
 
 # 데이터 로드 및 전처리
 @st.cache_data
 def load_data():
-    data = pd.read_csv("./data/pm25_pm10_merged.csv")  # 파일 경로 수정 필요
+    data = pd.read_csv("./data/pm25_pm10_merged_wind.csv")  # 파일 경로 수정 필요
     data['Date'] = pd.to_datetime(data['Date'])
     return data
 
-# 모델 학습 (도시별 모델)
+# 모델 학습 (도시별 모델, 계절 구분 없음)
 def train_model(data):
     pivot_data = data.pivot(index='Date', columns='City', values='PM2.5 (µg/m³)').reset_index().fillna(0)
     X = pivot_data[['Beijing']]  # 입력 변수
-    target_cities = ['Seoul', 'Tokyo', 'Delhi', 'Bangkok']
-
-    # 각 도시별 모델 학습
+    # 모든 도시를 동적으로 추출 (Beijing 제외)
+    target_cities = [col for col in pivot_data.columns if col not in ['Date', 'Beijing']]
+    
+    # 데이터 분할
+    X_train, X_test, y_train, y_test = train_test_split(X, pivot_data[target_cities], test_size=0.2, random_state=42)
+    
+    # 모델 학습
     models = {}
-    X_train, X_test, _, _ = train_test_split(X, pivot_data[target_cities], test_size=0.2, random_state=42)
+    evaluation_scores = {}
     for city in target_cities:
-        y = pivot_data[city]  # 단일 열 타겟
-        X_train_city, X_test_city, y_train_city, y_test_city = train_test_split(X, y, test_size=0.2, random_state=42)
         model = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=42)
-        model.fit(X_train_city, y_train_city)
+        model.fit(X_train, y_train[city])
         models[city] = model
+        # 평가 점수 계산
+        score = model.score(X_test, y_test[city])
+        mse = ((model.predict(X_test) - y_test[city]) ** 2).mean()
+        rmse = mse ** 0.5
+        mae = (abs(model.predict(X_test) - y_test[city])).mean()
+        evaluation_scores[city] = {'R²': score, 'MSE': mse, 'RMSE': rmse, 'MAE': mae}
 
-    return models, pivot_data, X_test, pivot_data[target_cities].loc[X_test.index]
+    return models, evaluation_scores, target_cities
 
 # 예측 함수
 def predict_pm25(models, beijing_pm25):
@@ -38,109 +47,108 @@ def predict_pm25(models, beijing_pm25):
     predictions['Beijing'] = beijing_pm25
     return predictions
 
-# 모델 스코어 계산
-def score_model(models, X_test, y_test):
-    scores = {}
-    for city, model in models.items():
-        scores[city] = model.score(X_test, y_test[city])
-    return scores
+# 등급 및 색상 계산 함수
+def get_grade(value, pollutant='PM2.5'):
+    if pollutant == 'PM2.5':
+        if value <= 10:
+            return "좋음", "green"
+        elif value <= 25:
+            return "보통", "blue"
+        elif value <= 50:
+            return "나쁨", "orange"
+        else:
+            return "매우 나쁨", "red"
+    return None, None
 
 # 도시 좌표 딕셔너리
 city_coords = {
-    'Seoul': (37.5665, 126.978),
-    'Tokyo': (35.6895, 139.6917),
-    'Beijing': (39.9042, 116.4074),
-    'Delhi': (28.7041, 77.1025),
-    'Bangkok': (13.7563, 100.5018)
+    "Seoul": [37.5665, 126.9780], "Tokyo": [35.6895, 139.6917], "Beijing": [39.9042, 116.4074],
+    "Delhi": [28.7041, 77.1025], "Bangkok": [13.7563, 100.5018], "Busan": [35.1796, 129.0756],
+    "Daegu": [35.8704, 128.5911], "Osaka": [34.6937, 135.5023], "Sapporo": [43.0618, 141.3545],
+    "Fukuoka": [33.5904, 130.4017], "Kyoto": [35.0116, 135.7681], "Shanghai": [31.2304, 121.4737],
+    "Guangzhou": [23.1291, 113.2644], "Chongqing": [29.5630, 106.5516], "Wuhan": [30.5928, 114.3055],
+    "Nanjing": [32.0603, 118.7969], "Hangzhou": [30.2741, 120.1551], "Chengdu": [30.5728, 104.0668],
+    "Almaty": [43.2220, 76.8512], "Bishkek": [42.8746, 74.5698], "Dushanbe": [38.5481, 68.7864],
+    "Kathmandu": [27.7172, 85.3240], "Yangon": [16.8409, 96.1951], "Guwahati": [26.1445, 91.7362],
+    "Ulaanbaatar": [47.8864, 106.9057], "Irkutsk": [52.2869, 104.2964],
+}
+
+# 도시 이름 매핑 (영어 → 한국어)
+city_names_kr = {
+    "Seoul": "서울", "Tokyo": "도쿄", "Beijing": "베이징", "Delhi": "델리", 
+    "Bangkok": "방콕", "Busan": "부산", "Daegu": "대구", "Osaka": "오사카", 
+    "Sapporo": "삿포로", "Fukuoka": "후쿠오카", "Kyoto": "교토", "Shanghai": "상하이", 
+    "Guangzhou": "광저우", "Chongqing": "충칭", "Wuhan": "우한", "Nanjing": "난징", 
+    "Hangzhou": "항저우", "Chengdu": "청두", "Almaty": "알마티", "Bishkek": "비슈케크", 
+    "Dushanbe": "두샨베", "Kathmandu": "카트만두", "Yangon": "양곤", "Guwahati": "구와하티", 
+    "Ulaanbaatar": "울란바토르", "Irkutsk": "이르쿠츠크"
 }
 
 # Streamlit 앱
-st.title("Beijing PM2.5 기반 도시별 미세먼지 예측 및 시간별 지도")
+st.title("베이징 미세먼지가 주변국에 미치는 영향")
 
-# 데이터 로드
+# 데이터 로드 및 모델 학습
 data = load_data()
-models, pivot_data, X_test, y_test = train_model(data)
+models, evaluation_scores, target_cities = train_model(data)
 
-# 모델 스코어 계산
-scores = score_model(models, X_test, y_test)
+# 탭 생성 (PM2.5만 다룸)
+tab1 = st.tabs(["PM2.5 예측"])[0]
 
-# 탭 구성
-tab1, tab2 = st.tabs(["예측 지도", "시간별 데이터 지도"])
-
-# 탭 1: 예측 지도
+# PM2.5 탭
 with tab1:
-    st.subheader("베이징 PM2.5 값을 입력해 예측")
-    st.write("도시별 모델 성능 (R² 스코어):")
-    for city, score in scores.items():
-        st.write(f"{city}: {score:.4f}")
-    st.write("※ R² 스코어는 모델이 데이터 변동성을 얼마나 설명하는지를 나타냅니다. 1에 가까울수록 예측력이 높습니다.")
-    
-    beijing_pm25 = st.number_input("Beijing PM2.5 (µg/m³)", min_value=0.0, max_value=500.0, value=100.0, step=1.0)
+    st.header("PM2.5 예측")
 
-    if st.button("예측하기"):
-        predictions = predict_pm25(models, beijing_pm25)
+    # 입력값 수집 (계절 선택 제거)
+    beijing_pm25 = st.slider("베이징 PM2.5 (µg/m³)", 0.0, 200.0, 50.0, key="pm25_input")
 
-        # 예측 데이터프레임 생성
-        pred_df = pd.DataFrame({
-            'City': list(predictions.keys()),
-            'PM2.5 (µg/m³)': list(predictions.values()),
-            'Latitude': [city_coords[city][0] for city in predictions.keys()],
-            'Longitude': [city_coords[city][1] for city in predictions.keys()]
-        })
+    # 예측 및 지도 표시
+    predictions = predict_pm25(models, beijing_pm25)
 
-        # 지도 시각화
-        fig = px.scatter_mapbox(pred_df, 
-                                lat="Latitude", 
-                                lon="Longitude", 
-                                size="PM2.5 (µg/m³)", 
-                                color="PM2.5 (µg/m³)", 
-                                hover_name="City", 
-                                hover_data={"PM2.5 (µg/m³)": True, "Latitude": False, "Longitude": False},
-                                size_max=30,
-                                zoom=2,
-                                mapbox_style="open-street-map",
-                                title=f"Beijing PM2.5 = {beijing_pm25} µg/m³일 때 예측")
-        st.plotly_chart(fig)
+    if predictions:
+        # 예측 결과 섹션 (expander로 묶음)
+        with st.expander("주변국 PM2.5 예측"):
+            pred_table_data = {
+                "도시": [city_names_kr.get(city, city) for city in predictions.keys()],
+                "PM2.5 (µg/m³)": [f"{pm25:.2f}" for pm25 in predictions.values()],
+                "상태": [get_grade(pm25, 'PM2.5')[0] for pm25 in predictions.values()]
+            }
+            pred_df = pd.DataFrame(pred_table_data)
+            st.dataframe(pred_df, use_container_width=True)
 
-# 탭 2: 시간별 데이터 지도 (슬라이더로 날짜 변경)
-with tab2:
-    st.subheader("시간별 미세먼지 농도 지도")
-    
-    # 날짜 슬라이더
-    unique_dates = data['Date'].dt.date.unique()
-    min_date_idx = 0
-    max_date_idx = len(unique_dates) - 1
-    
-    selected_idx = st.slider("날짜 선택 (막대바를 이동하세요)", 
-                             min_value=min_date_idx, 
-                             max_value=max_date_idx, 
-                             value=0, 
-                             format="")
-    selected_date = unique_dates[selected_idx]
-    st.write(f"선택된 날짜: {selected_date}")
+        # 모델 평가 점수 섹션 (expander로 묶음)
+        with st.expander("모델 평가 점수 (PM2.5)"):
+            eval_table_data = {
+                "도시": [city_names_kr.get(city, city) for city in models.keys()],
+                "MSE": [evaluation_scores[city]['MSE'] for city in models.keys()],
+                "RMSE": [evaluation_scores[city]['RMSE'] for city in models.keys()],
+                "MAE": [evaluation_scores[city]['MAE'] for city in models.keys()],
+                "R² 스코어": [evaluation_scores[city]['R²'] for city in models.keys()]
+            }
+            eval_df = pd.DataFrame(eval_table_data)
+            st.dataframe(eval_df, use_container_width=True)
 
-    # 선택된 날짜 데이터 필터링
-    date_data = data[data['Date'].dt.date == selected_date].copy()
-    date_data['Latitude'] = date_data['City'].map(lambda x: city_coords[x][0])
-    date_data['Longitude'] = date_data['City'].map(lambda x: city_coords[x][1])
-
-    # 지도 시각화
-    fig = px.scatter_mapbox(date_data, 
-                            lat="Latitude", 
-                            lon="Longitude", 
-                            size="PM2.5 (µg/m³)", 
-                            color="PM2.5 (µg/m³)", 
-                            hover_name="City", 
-                            hover_data={"PM2.5 (µg/m³)": True, "Latitude": False, "Longitude": False},
-                            size_max=30,
-                            zoom=2,
-                            mapbox_style="open-street-map",
-                            title=f"PM2.5 on {selected_date}")
-    st.plotly_chart(fig)
-
-    # 선택된 날짜의 데이터 테이블
-    st.write(f"{selected_date}의 데이터:")
-    st.table(date_data[['City', 'PM2.5 (µg/m³)', 'PM10 (µg/m³)']])
+        # 지도 생성
+        st.subheader("지도 (PM2.5)")
+        m = folium.Map(location=[35, 120], zoom_start=4)
+        
+        # 예측값을 지도에 표시 (좌표가 있는 도시만)
+        for city, pm25 in predictions.items():
+            if city in city_coords:
+                lat, lon = city_coords[city]
+                grade, color = get_grade(pm25, 'PM2.5')
+                folium.CircleMarker(
+                    location=[lat, lon],
+                    radius=pm25 / 10,
+                    popup=f"{city_names_kr.get(city, city)}: {pm25:.2f} µg/m³ ({grade})",
+                    color=color,
+                    fill=True,
+                    fill_opacity=0.7
+                ).add_to(m)
+        
+        # 지도 표시
+        st_folium(m, width=700, height=500, key="map_pm25")
+    else:
+        st.error("모델이 없습니다 (PM2.5).")
 
 # 데이터 정보
 with st.expander("원본 데이터 미리보기"):
