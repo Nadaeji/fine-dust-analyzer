@@ -86,7 +86,15 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 ## Gradient Boosting + Label Encode
 - 
 ## DBSCAN + XGBoost
-- 
+- **XGBoost (XGBRegressor)목적**
+    - 도시별 미세먼지(PM2.5 및 PM10) 농도를 예측
+    - 각 클러스터와 도시별로 독립적으로 학습
+    - 훈련 데이터와 테스트 데이터를 분리하여 모델 성능 평가
+
+    **DBSCAN 목적**
+    - 데이터 군집화(클러스터링) 수행.
+    - 베이징 미세먼지 농도와 월 데이터를 기반으로 클러스터를 생성.
+    - 노이즈(-1로 표시된 클러스터)는 제외.
 ## DBSCAN + Linear_regression
 - 
 ## DesitionTree_regression + Kmeans
