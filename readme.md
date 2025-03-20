@@ -37,6 +37,10 @@
 
 ---
 
+## 결과물
+
+[미세먼지 예측 시각화 페이지](http://ml.toyproject.site/)
+
 ## 📂 분석에 사용한 데이터셋
 
 Google Earth Engine
@@ -83,10 +87,27 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 - 연도별 도시의 평균 초미세먼지 농도
 ![이미지](./img/city_year_pm25.png)
 # 데이터 학습 
+
+
 ## Gradient Boosting + Label Encode
-- 
+- **Gradient Boosting**:
+   - 회귀 및 분류 문제에서 높은 예측 정확도를 제공
+   - PM2.5 농도 예측과 같은 비선형적이고 복잡한 데이터 패턴을 효과적으로 학습 가능
+
+   - 지도 학습 방식으로 데이터 분류
+   - Label Encoding을 통해 범주형 데이터를 숫자로 변환한 후 Gradient Boosting에 입력하여 정확한 분류가 가능하도록 설계
+
+
 ## DBSCAN + XGBoost
-- 
+- **XGBoost (XGBRegressor)목적**
+    - 도시별 미세먼지(PM2.5 및 PM10) 농도를 예측
+    - 각 클러스터와 도시별로 독립적으로 학습
+    - 훈련 데이터와 테스트 데이터를 분리하여 모델 성능 평가
+
+    **DBSCAN 목적**
+    - 데이터 군집화(클러스터링) 수행.
+    - 베이징 미세먼지 농도와 월 데이터를 기반으로 클러스터를 생성.
+    - 노이즈(-1로 표시된 클러스터)는 제외.
 ## DBSCAN + Linear_regression
 - 데이터 전처리 및 병합
 
@@ -113,6 +134,7 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 ## Kmeans-앙상블 
 - 군집화 
 
+
 # 학습 점수
 ## DBSCAN + Linear_regression
 ![이미지](./img/dbscan_linear_regression_결과.png)
@@ -120,6 +142,41 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 ![이미지](./img/dbscan_linear_regression_평가점수_PM2.5.png)
 ### PM10
 ![이미지](./img/dbscan_linear_regression_평가점수_PM10.png)
+
+<<<<<<< HEAD
+## Gradient Boosting + Label Encode
+
+=======
+## Kmeans-앙상블
+- 
+
+# 학습 점수
+## Gradient Boosting + Label Encode
+![이미지](./img/gradient_boosting_델리방콕분류결과.png)
+![이미지](./img/gradient_boosting_서울도쿄분류결과.png)
+>>>>>>> 1c73a99ccee1d793f228f9ffe6850a9103622bfb
+![이미지](./img/gradient_boosting_성능평가.png)
+
+# 학습 점수
+
+
+## DBSCAN + XGBoost
+
+<figure  style="text-align: center; height:200px; width:450px;">
+<img src="./img/streamlit xgboost.png">
+</figure>
+
+<figure style="display: flex; justify-content: center; gap: 20px; text-align: center; flex-wrap: wrap;">
+  <div style="flex: 1; max-width: 50%;">
+    <img src="./img/서울,도쿄%20평가%20점수(xgboost).png" style="width: 100%; height: auto;">
+  </div>
+
+  <div style="flex: 1; max-width: 50%;">
+    <img src="./img/방콕,델리%20평가점수(xgboost).png" style="width: 100%; height: auto;">
+  </div>
+</figure>
+
+## DBSCAN + Linear_regression
 
 # 예측
 ## DBSCAN + Linear_regression
