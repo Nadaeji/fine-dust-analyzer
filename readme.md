@@ -118,11 +118,30 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 
 # 학습 점수
 
-![이미지](./img/gradient_boosting_델리방콕분류결과.png)
-![이미지](./img/gradient_boosting_서울도쿄분류결과.png)
+## Gradient Boosting + Label Encode
+
 ![이미지](./img/gradient_boosting_성능평가.png)
 ![이미지](./img/gradient_boosting_모델평가점수.png)
 ![이미지](./img/gradient_boosting_예측.png)
+
+
+## DBSCAN + XGBoost
+
+<figure  style="text-align: center; height:200px; width:450px;">
+<img src="./img/streamlit xgboost.png">
+</figure>
+
+<figure style="display: flex; justify-content: center; gap: 20px; text-align: center; flex-wrap: wrap;">
+  <div style="flex: 1; max-width: 50%;">
+    <img src="./img/서울,도쿄%20평가%20점수(xgboost).png" style="width: 100%; height: auto;">
+  </div>
+
+  <div style="flex: 1; max-width: 50%;">
+    <img src="./img/방콕,델리%20평가점수(xgboost).png" style="width: 100%; height: auto;">
+  </div>
+</figure>
+
+## DBSCAN + Linear_regression
 
 # 예측
 
