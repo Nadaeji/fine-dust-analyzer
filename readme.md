@@ -25,7 +25,7 @@
 
 🔗 관련 기사:
 - [중국발 미세먼지 및 몽골발 황사 영향](https://www.chosun.com/national/transport-environment/2025/03/12/NISU7VVNRRGXZFIE27QK4C6MK4/)
-- [여기 넣은 기사 하나가 필요하다.](https://www.sukbakmagazine.com/news/articleView.html?idxno=61073)
+- [중국발 스모그에 의한 초미세먼지 기승](https://news.jtbc.co.kr/article/NB12239427?influxDiv=NAVER)
 
 
 | 등급       | PM10 (μg/m³) | PM2.5 (μg/m³) |
@@ -54,6 +54,9 @@ Google Earth Engine
 
 
 ## 🔍 DataSet을 통해 얻고자 하는 인사이트
+
+1. 중국의 미세먼지에 따라 주변국에 미치는 영향을 알 수 있다.
+2. 미세먼지 농도를 예측 할 수 있다.
 
 1. **중국의 미세먼지 농도에 따른 주변국의 미세먼지 예측**
 
