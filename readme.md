@@ -84,7 +84,14 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 ![이미지](./img/city_year_pm25.png)
 # 데이터 학습 
 ## Gradient Boosting + Label Encode
-- 
+- **Gradient Boosting**:
+   - 회귀 및 분류 문제에서 높은 예측 정확도를 제공
+   - PM2.5 농도 예측과 같은 비선형적이고 복잡한 데이터 패턴을 효과적으로 학습 가능
+
+   - 지도 학습 방식으로 데이터 분류
+   - Label Encoding을 통해 범주형 데이터를 숫자로 변환한 후 Gradient Boosting에 입력하여 정확한 분류가 가능하도록 설계
+
+
 ## DBSCAN + XGBoost
 - **XGBoost (XGBRegressor)목적**
     - 도시별 미세먼지(PM2.5 및 PM10) 농도를 예측
@@ -108,12 +115,14 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 ## Kmeans-앙상블 
 - 군집화 
 
-- Gradient Boosting
+
+# 학습 점수
+
 ![이미지](./img/gradient_boosting_델리방콕분류결과.png)
 ![이미지](./img/gradient_boosting_서울도쿄분류결과.png)
 ![이미지](./img/gradient_boosting_성능평가.png)
-
-# 학습 점수
+![이미지](./img/gradient_boosting_모델평가점수.png)
+![이미지](./img/gradient_boosting_예측.png)
 
 # 예측
 
