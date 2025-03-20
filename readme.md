@@ -128,7 +128,6 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 
 ![이미지](./img/gradient_boosting_성능평가.png)
 ![이미지](./img/gradient_boosting_모델평가점수.png)
-![이미지](./img/gradient_boosting_예측.png)
 
 
 ## DBSCAN + XGBoost
@@ -163,7 +162,6 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 # 예측
 ## Gradient Boosting + Label Encode
 ![이미지](./img/gradient_boosting_예측.png)
-![이미지](./img/gradient_boosting_모델평가점수.png)
 
 
 ## DBSCAN + XGBoost
