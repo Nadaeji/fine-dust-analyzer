@@ -37,6 +37,10 @@
 
 ---
 
+## 결과물
+
+[미세먼지 예측 시각화 페이지](http://ml.toyproject.site/)
+
 ## 📂 분석에 사용한 데이터셋
 
 Google Earth Engine
@@ -83,6 +87,8 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 - 연도별 도시의 평균 초미세먼지 농도
 ![이미지](./img/city_year_pm25.png)
 # 데이터 학습 
+
+
 ## Gradient Boosting + Label Encode
 - **Gradient Boosting**:
    - 회귀 및 분류 문제에서 높은 예측 정확도를 제공
@@ -118,11 +124,21 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 
 # 학습 점수
 
+<<<<<<< HEAD
 ## Gradient Boosting + Label Encode
 
+=======
+## Kmeans-앙상블
+- 
+
+# 학습 점수
+## Gradient Boosting + Label Encode
+![이미지](./img/gradient_boosting_델리방콕분류결과.png)
+![이미지](./img/gradient_boosting_서울도쿄분류결과.png)
+>>>>>>> 1c73a99ccee1d793f228f9ffe6850a9103622bfb
 ![이미지](./img/gradient_boosting_성능평가.png)
-![이미지](./img/gradient_boosting_모델평가점수.png)
-![이미지](./img/gradient_boosting_예측.png)
+
+# 학습 점수
 
 
 ## DBSCAN + XGBoost
