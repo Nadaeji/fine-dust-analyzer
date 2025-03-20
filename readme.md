@@ -37,10 +37,6 @@
 
 ---
 
-## 결과물
-
-[미세먼지 예측 시각화 페이지](http://ml.toyproject.site/)
-
 ## 📂 분석에 사용한 데이터셋
 
 Google Earth Engine
@@ -87,8 +83,6 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 - 연도별 도시의 평균 초미세먼지 농도
 ![이미지](./img/city_year_pm25.png)
 # 데이터 학습 
-
-
 ## Gradient Boosting + Label Encode
 - **Gradient Boosting**:
    - 회귀 및 분류 문제에서 높은 예측 정확도를 제공
@@ -124,19 +118,11 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 
 # 학습 점수
 
-<<<<<<< HEAD
-## Gradient Boosting + Label Encode
-
-=======
-## Kmeans-앙상블
-- 
-
-# 학습 점수
 ## Gradient Boosting + Label Encode
 
 ![이미지](./img/gradient_boosting_성능평가.png)
-
-# 학습 점수
+![이미지](./img/gradient_boosting_모델평가점수.png)
+![이미지](./img/gradient_boosting_예측.png)
 
 
 ## DBSCAN + XGBoost
@@ -146,20 +132,37 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
 </figure>
 
 <figure style="display: flex; justify-content: center; gap: 20px; text-align: center; flex-wrap: wrap;">
-  <div style="flex: 1; max-width: 50%;">
-    <img src="./img/서울,도쿄%20평가%20점수(xgboost).png" style="width: 100%; height: auto;">
-  </div>
+<div style="flex: 1; max-width: 50%;">
+<img src="./img/서울,도쿄%20평가%20점수(xgboost).png" style="width: 100%; height: auto;">
+</div>
 
-  <div style="flex: 1; max-width: 50%;">
-    <img src="./img/방콕,델리%20평가점수(xgboost).png" style="width: 100%; height: auto;">
-  </div>
+<div style="flex: 1; max-width: 50%;">
+<img src="./img/방콕,델리%20평가점수(xgboost).png" style="width: 100%; height: auto;">
+</div>
 </figure>
 
 ## DBSCAN + Linear_regression
 
+## Kmeans-앙상블 
+
+
+<figure  style="text-align: center; height:300px; width:450px;">
+<img src="./img/streamlit Kmeans 예측.png">
+</figure>
+
+
+<figure  style="text-align: center; height:300px; width:450px;">
+<img src="./img/streamlit Kmeans 평가점수.png">
+</figure>
+
 # 예측
 
-## Gradient Boosting + Label Encode
 ![이미지](./img/gradient_boosting_예측.png)
 ![이미지](./img/gradient_boosting_모델평가점수.png)
 
+## Kmeans-앙상블 
+
+
+<figure  style="text-align: center; height:300px; width:450px;">
+<img src="./img/streamlit Kmeans 예측.png">
+</figure>
