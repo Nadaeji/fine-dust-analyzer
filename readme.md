@@ -123,7 +123,8 @@ df = pd.read_csv('./data/pm25_pm10_merged.csv')
     - 미세먼지의 좋음 나쁨 매우 나쁨을 기준으로 군집화
 - **앙상블**
     - gradientBoosting과 randomforest의 학습 결과를 stacking을 통해 성능을 높이기 위해 사용
-
+- **RandomizedSearchCV**
+    - 최적의 하이퍼파라미터를 찾기 위해 사용   
 
 # 학습 점수
 ## Gradient Boosting + Label Encode
